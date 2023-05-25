@@ -1,4 +1,4 @@
-# trabajoAIA
+# TrabajoAIA
 
 Plazo de entrega en la primera convocatoria: hasta el 20 de junio de 2023
 Plazo de entrega en la segunda convocatoria: hasta el 16 de julio de 2023
