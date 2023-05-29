@@ -11,8 +11,8 @@
 # --------------------------------------------------------------------------
 # Autor(a) del trabajo:
 #
-# APELLIDOS:
-# NOMBRE: 
+# APELLIDOS: Ramón Soria
+# NOMBRE: Guillermo
 #
 # Segundo(a) componente (si se trata de un grupo):
 #
@@ -179,6 +179,12 @@ import numpy as np
 # (array(['conceder', 'estudiar', 'no conceder'], dtype='<U11'),
 #  array([81, 91, 88]))
 # ------------------------------------------------------------------
+
+import carga_datos as cd
+
+def particion_entr_prueba(X,y,test=0.20):
+    pass
+
 
 
 ## ---------- 
