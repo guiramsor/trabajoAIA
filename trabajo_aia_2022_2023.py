@@ -183,8 +183,16 @@ import numpy as np
 import carga_datos as cd
 
 def particion_entr_prueba(X,y,test=0.20):
-    pass
+    X_train, X_test, y_train, y_test = [], [], [], []
+    solo_etiq, ind_etiq = np.unique(y, return_inverse=True)
+    
+    # ...
+    
+    return X_train, X_test, y_train, y_test
 
+# Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(X_votos,y_votos,test=1/3)
+# Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(X_cancer,y_cancer,test=0.2)
+# Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
 
 
 ## ---------- 
