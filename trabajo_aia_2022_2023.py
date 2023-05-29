@@ -16,8 +16,8 @@
 #
 # Segundo(a) componente (si se trata de un grupo):
 #
-# APELLIDOS:
-# NOMBRE:
+# APELLIDOS: Molina Torres
+# NOMBRE: Daniel
 # ----------------------------------------------------------------------------
 
 
@@ -182,13 +182,58 @@ import numpy as np
 
 import carga_datos as cd
 
-def particion_entr_prueba(X,y,test=0.20):
+def particion_entr_prueba2(X,y,test=0.20):
     X_train, X_test, y_train, y_test = [], [], [], []
     solo_etiq, ind_etiq = np.unique(y, return_inverse=True)
     
     # ...
     
     return X_train, X_test, y_train, y_test
+
+import numpy as np
+
+def particion_entr_prueba(X, y, test=0.20):
+    # Obtener el número de ejemplos y la cantidad de datos de prueba
+    num_ejemplos = len(X)
+    num_prueba = int(num_ejemplos * test)
+
+    # Obtener las clases únicas presentes en y
+    clases_unicas = np.unique(y)
+    num_clases = len(clases_unicas)
+
+    # Inicializar los índices de los datos de entrenamiento y prueba
+    idX_train = []
+    idX_test = []
+
+    for clase in clases_unicas:
+        # Obtener los índices correspondientes a la clase actual
+        idx_clase = np.where(y == clase)[0]
+
+        # Obtener la cantidad de datos de prueba estratificados para la clase actual
+        num_prueba_clase = int(num_prueba / num_clases)
+
+        # Mezclar los índices aleatoriamente
+        np.random.shuffle(idx_clase)
+
+        # Agregar los índices de los datos de prueba estratificados para la clase actual
+        idX_test.extend(idx_clase[:num_prueba_clase])
+
+        # Agregar los índices de los datos de entrenamiento para la clase actual
+        idX_train.extend(idx_clase[num_prueba_clase:])
+
+    # Mezclar los índices de entrenamiento y prueba
+    np.random.shuffle(idX_train)
+    np.random.shuffle(idX_test)
+
+    # Obtener los conjuntos de entrenamiento y prueba
+    X_train = X[idX_train]
+    y_train = y[idX_train]
+    X_test = X[idX_test]
+    y_test = y[idX_test]
+
+    return X_train, X_test, y_train, y_test
+
+
 
 # Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(X_votos,y_votos,test=1/3)
 # Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(X_cancer,y_cancer,test=0.2)
