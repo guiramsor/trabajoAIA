@@ -181,64 +181,83 @@ import numpy as np
 # ------------------------------------------------------------------
 
 import carga_datos as cd
-
-def particion_entr_prueba2(X,y,test=0.20):
-    X_train, X_test, y_train, y_test = [], [], [], []
-    solo_etiq, ind_etiq = np.unique(y, return_inverse=True)
-    
-    # ...
-    
-    return X_train, X_test, y_train, y_test
-
 import numpy as np
 
 def particion_entr_prueba(X, y, test=0.20):
-    # Obtener el número de ejemplos y la cantidad de datos de prueba
-    num_ejemplos = len(X)
-    num_prueba = int(num_ejemplos * test)
-
-    # Obtener las clases únicas presentes en y
-    clases_unicas = np.unique(y)
-    num_clases = len(clases_unicas)
-
-    # Inicializar los índices de los datos de entrenamiento y prueba
-    idX_train = []
-    idX_test = []
-
-    for clase in clases_unicas:
+    # Obtener los valores únicos de clasificación
+    classes = np.unique(y)
+    
+    # Inicializar los conjuntos de entrenamiento y prueba
+    X_train = []
+    y_train = []
+    X_test = []
+    y_test = []
+    
+    for c in classes:
         # Obtener los índices correspondientes a la clase actual
-        idx_clase = np.where(y == clase)[0]
+        index_class = np.where(y == c)[0]
+   
+        # Calcular el tamaño del conjunto de prueba para la clase actual
+        test_size = int(len(index_class) * test)
 
-        # Obtener la cantidad de datos de prueba estratificados para la clase actual
-        num_prueba_clase = int(num_prueba / num_clases)
-
-        # Mezclar los índices aleatoriamente
-        np.random.shuffle(idx_clase)
-
-        # Agregar los índices de los datos de prueba estratificados para la clase actual
-        idX_test.extend(idx_clase[:num_prueba_clase])
-
-        # Agregar los índices de los datos de entrenamiento para la clase actual
-        idX_train.extend(idx_clase[num_prueba_clase:])
-
-    # Mezclar los índices de entrenamiento y prueba
-    np.random.shuffle(idX_train)
-    np.random.shuffle(idX_test)
-
-    # Obtener los conjuntos de entrenamiento y prueba
-    X_train = X[idX_train]
-    y_train = y[idX_train]
-    X_test = X[idX_test]
-    y_test = y[idX_test]
-
+        # Generar índices aleatorios para la partición de prueba
+        np.random.shuffle(index_class)
+        index_test = index_class[:test_size]
+        
+        # Obtener los índices restantes para la partición de entrenamiento
+        index_train = np.setdiff1d(index_class, index_test)
+        
+        # Agregar los datos a los conjuntos de entrenamiento y prueba
+        X_train.append(X[index_train])
+        y_train.append(y[index_train])
+        X_test.append(X[index_test])
+        y_test.append(y[index_test])
+    
+    # Concatenar los conjuntos de entrenamiento y prueba
+    X_train = np.concatenate(X_train)
+    y_train = np.concatenate(y_train)
+    X_test = np.concatenate(X_test)
+    y_test = np.concatenate(y_test)
+    
     return X_train, X_test, y_train, y_test
 
 
 
-# Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(X_votos,y_votos,test=1/3)
-# Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(X_cancer,y_cancer,test=0.2)
-# Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
+Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
+# print(np.unique(cd.y_votos,return_counts=True))
+# #  (array([0, 1]), array([168, 267]))
+# print(np.unique(ye_votos,return_counts=True))
+# #  (array([0, 1]), array([112, 178]))
+# print(np.unique(yp_votos,return_counts=True))
+# #  (array([0, 1]), array([56, 89]))
+# print("\n")
 
+Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(cd.X_cancer,cd.y_cancer,test=0.2)
+# print(np.unique(cd.y_cancer,return_counts=True))
+# #(array([0, 1]), array([212, 357]))
+# print(np.unique(yev_cancer,return_counts=True))
+# # (array([0, 1]), array([170, 286]))
+# print(np.unique(yp_cancer,return_counts=True))
+# # (array([0, 1]), array([42, 71])) 
+# print("\n")
+
+Xe_cancer,Xv_cancer,ye_cancer,yv_cancer=particion_entr_prueba(Xev_cancer,yev_cancer,test=0.2)
+# print(np.unique(ye_cancer,return_counts=True))
+# # (array([0, 1]), array([170, 286]))
+# print(np.unique(yv_cancer,return_counts=True))
+# # (array([0, 1]), array([170, 286]))
+# print("\n")
+
+Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
+# print(np.unique(cd.y_credito,return_counts=True))
+# # (array(['conceder', 'estudiar', 'no conceder'], dtype='<U11'),
+# #  array([202, 228, 220]))
+# print(np.unique(ye_credito,return_counts=True))
+# # (array(['conceder', 'estudiar', 'no conceder'], dtype='<U11'),
+# #  array([121, 137, 132]))
+# print(np.unique(yp_credito,return_counts=True))
+# # (array(['conceder', 'estudiar', 'no conceder'], dtype='<U11'),
+# #  array([81, 91, 88]))
 
 ## ---------- 
 
@@ -280,21 +299,21 @@ def particion_entr_prueba(X, y, test=0.20):
 # En particular, definir la clase: 
 
 
-# class NormalizadorStandard():
+class NormalizadorStandard():
 
-#    def __init__(self):
+    def __init__(self):
+        self.media = None
+        self.desviacion=None
 
-#         .....
-        
-#     def ajusta(self,X):
+    def ajusta(self,X):
+        self.media = np.mean(X, axis=0)
+        self.desviacion = np.std(X, axis=0)
 
-#         .....        
-
-#     def normaliza(self,X):
-
-#         ......
-
-# 
+    def normaliza(self,X):
+        if self.media is None or self.desviacion is None:
+            raise NormalizadorNoAjustado("No ajustado el Normalizador")
+        X_normalizado = (X - self.media) / self.desviacion
+        return X_normalizado
 
 
 # donde el método ajusta calcula las corresondientes medias y desviaciones típicas
@@ -306,15 +325,18 @@ def particion_entr_prueba(X, y, test=0.20):
 
 class NormalizadorNoAjustado(Exception): pass
 
+normst_cancer = NormalizadorStandard()
+normst_cancer.ajusta(Xe_cancer)
 
-# Por ejemplo:
-    
-    
-# >>> normst_cancer=NormalizadorStandard()
-# >>> normst_cancer.ajusta(Xe_cancer)
-# >>> Xe_cancer_n=normst_cancer.normaliza(Xe_cancer)
-# >>> Xv_cancer_n=normst_cancer.normaliza(Xv_cancer)
-# >>> Xp_cancer_n=normst_cancer.normaliza(Xp_cancer)
+Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
+Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
+Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
+
+print(np.std(Xe_cancer_n))
+
+# print("Xe_cancer_n: ", Xe_cancer_n, "\n",
+#                 "Xv_cancer_n: ", Xv_cancer_n, "\n",
+#                 "Xp_cancer_n: ", Xp_cancer_n, "\n")
 
 # Una vez realizado esto, la media y desviación típica de Xe_cancer_n deben ser 
 # 0 y 1, respectivamente. No necesariamente ocurre lo mismo con Xv_cancer_n, 
