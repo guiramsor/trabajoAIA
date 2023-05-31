@@ -185,7 +185,7 @@ import numpy as np
 
 def particion_entr_prueba(X, y, test=0.20):
     # Obtener los valores únicos de clasificación
-    classes = np.unique(y)
+    clases = np.unique(y)
     
     # Inicializar los conjuntos de entrenamiento y prueba
     X_train = []
@@ -193,7 +193,7 @@ def particion_entr_prueba(X, y, test=0.20):
     X_test = []
     y_test = []
     
-    for c in classes:
+    for c in clases:
         # Obtener los índices correspondientes a la clase actual
         index_class = np.where(y == c)[0]
    
@@ -220,8 +220,6 @@ def particion_entr_prueba(X, y, test=0.20):
     y_test = np.concatenate(y_test)
     
     return X_train, X_test, y_train, y_test
-
-
 
 Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
 # print(np.unique(cd.y_votos,return_counts=True))
@@ -261,24 +259,6 @@ Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,c
 
 ## ---------- 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ===========================
 # EJERCICIO 2: NORMALIZADORES
 # ===========================
@@ -297,8 +277,6 @@ Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,c
 # media 0 y desviación típica 1. 
 
 # En particular, definir la clase: 
-
-
 class NormalizadorStandard():
 
     def __init__(self):
@@ -329,10 +307,10 @@ normst_cancer = NormalizadorStandard()
 normst_cancer.ajusta(Xe_cancer)
 
 Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
+print(np.mean(Xe_cancer_n))
+print(np.std(Xe_cancer_n))
 Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
-
-print(np.std(Xe_cancer_n))
 
 # print("Xe_cancer_n: ", Xe_cancer_n, "\n",
 #                 "Xv_cancer_n: ", Xv_cancer_n, "\n",
@@ -345,21 +323,6 @@ print(np.std(Xe_cancer_n))
 
 
 # ------ 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ------------------------
@@ -388,14 +351,31 @@ print(np.std(Xe_cancer_n))
 
 # ------ 
 
+class NormalizadorMinMax():
+
+    def __init__(self):
+        self.minimo = None
+        self.maximo = None
+
+    def ajusta(self,X):
+        self.minimo = np.min(X, axis=0)
+        self.maximo = np.max(X, axis=0)
+
+    def normaliza(self,X):
+        if self.minimo is None or self.maximo is None:
+            raise NormalizadorNoAjustado("No ajustado el Normalizador")
+        X_normalizado = (X - self.minimo) / (self.maximo - self.minimo)
+        return X_normalizado
+
+normminmax_cancer=NormalizadorMinMax()
+normminmax_cancer.ajusta(Xe_cancer)
 
 
-
-
-
-
-
-
+Xe_cancer_m=normminmax_cancer.normaliza(Xe_cancer)
+print(np.mean(Xe_cancer_n))
+print(np.std(Xe_cancer_n))
+Xv_cancer_m=normminmax_cancer.normaliza(Xv_cancer)
+Xp_cancer_m=normminmax_cancer.normaliza(Xp_cancer)
 
 
 
