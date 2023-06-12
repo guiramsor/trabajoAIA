@@ -307,8 +307,8 @@ normst_cancer = NormalizadorStandard()
 normst_cancer.ajusta(Xe_cancer)
 
 Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
-print(np.mean(Xe_cancer_n))
-print(np.std(Xe_cancer_n))
+# print(np.mean(Xe_cancer_n))
+# print(np.std(Xe_cancer_n))
 Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
 
@@ -372,11 +372,10 @@ normminmax_cancer.ajusta(Xe_cancer)
 
 
 Xe_cancer_m=normminmax_cancer.normaliza(Xe_cancer)
-print(np.mean(Xe_cancer_n))
-print(np.std(Xe_cancer_n))
+# print(np.mean(Xe_cancer_n))
+# print(np.std(Xe_cancer_n))
 Xv_cancer_m=normminmax_cancer.normaliza(Xv_cancer)
 Xp_cancer_m=normminmax_cancer.normaliza(Xp_cancer)
-
 
 
 # ===========================================
@@ -567,9 +566,7 @@ def rendimiento(clasif,X,y):
 # Nótese que para en el epoch 6 ya que desde la entropía cruzada obtenida en el epoch 3 
 # sobre el conjunto de validación, ésta no se ha mejorado. 
 
-
 # -----------------------------------------------------------------
-
 
 import numpy as np
 from scipy.special import expit
@@ -590,7 +587,7 @@ class RegresionLogisticaMiniBatch():
         return expit(x)
 
     def entropia_cruzada(self, y, y_pred):
-        return -np.mean(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred))
+        return np.mean(-(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred)))
 
     def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
         self.classes = np.unique(y)
@@ -631,10 +628,10 @@ class RegresionLogisticaMiniBatch():
                 acc_val = np.mean(self.clasifica(Xv) == yv)
 
                 print(f"Epoch {epoch + 1}:")
-                print(f"  Entropía cruzada (entrenamiento): {loss_train:.4f}")
-                print(f"  Rendimiento (entrenamiento): {acc_train:.4f}")
-                print(f"  Entropía cruzada (validación): {loss_val:.4f}")
-                print(f"  Rendimiento (validación): {acc_val:.4f}")
+                print(f"  en entrenamiento EC: {loss_train:.4f}, rendimiento: {acc_train:.4f}")
+                #print(f"  Rendimiento (entrenamiento): {acc_train:.4f}")
+                print(f"  en entrenamiento EC: {loss_val:.4f}, rendimiento: {acc_val:.4f}")
+                #print(f"  Rendimiento (validación): {acc_val:.4f}")
 
                 if early_stopping and loss_val < best_loss:
                     best_loss = loss_val
@@ -643,7 +640,7 @@ class RegresionLogisticaMiniBatch():
                     epochs_without_improvement += 1
 
                 if early_stopping and epochs_without_improvement >= paciencia:
-                    print("Deteniendo el entrenamiento debido a la falta de mejora.")
+                    print("PARADA TEMPRANA")
                     break
 
     def clasifica_prob(self, ejemplos):
@@ -661,12 +658,10 @@ class RegresionLogisticaMiniBatch():
         y_pred_class = np.where(y_pred >= 0.5, self.classes[1], self.classes[0])
         return y_pred_class
 
-
+# lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
+# lr_cancer.entrena(Xe_cancer_n,ye_cancer,Xv_cancer_n,yv_cancer,salida_epoch=True,early_stopping=True)
 
 # ------------------------------------------------------------------------------
-
-
-
 
 
 # =================================================
@@ -694,7 +689,7 @@ class RegresionLogisticaMiniBatch():
 # parámetros para llamar al constructor.
 
 # INDICACIÓN: para usar params al llamar al constructor del clasificador, usar
-# clase_clasificador(**params)  
+# clase_clasificador(**params)
 
 # ------------------------------------------------------------------------------
 # Ejemplo:
@@ -746,9 +741,6 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
         Xv = X
         yv = y
     
-    #No usado
-    tam_particion = len(X) // n
-    
     rendimientos = []
     
     indices_aleatorios = np.random.permutation(len(X))
@@ -781,10 +773,8 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 
 
 # Importar la clase RegresionLogisticaMiniBatch (Ejercicio 3)
-rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch,{"batch_tam":16,"rate":0.01,"rate_decay":True},Xe_cancer_n,ye_cancer,n=5)
-print(f"Rendimiento medio: {rendimiento_medio}")
-
-
+# rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch,{"batch_tam":16,"rate":0.01,"rate_decay":True},Xe_cancer_n,ye_cancer,n=5)
+# print(f"Rendimiento medio: {rendimiento_medio}")
 
 
 
@@ -815,31 +805,29 @@ print(f"Rendimiento medio: {rendimiento_medio}")
 
 # ----------------------------
 
-import numpy as np
+# import numpy as np
 
-# Paso 2: Preprocesar los datos
-normminmax_cancer = NormalizadorMinMax()
-normminmax_cancer.ajusta(Xe_cancer)
+# # Paso 2: Preprocesar los datos
+# normminmax_cancer = NormalizadorMinMax()
+# normminmax_cancer.ajusta(Xe_cancer)
 
-Xe_cancer_n = normminmax_cancer.normaliza(Xe_cancer)
-Xv_cancer_n = normminmax_cancer.normaliza(Xv_cancer)
-Xp_cancer_n = normminmax_cancer.normaliza(Xp_cancer)
+# Xe_cancer_n = normminmax_cancer.normaliza(Xe_cancer)
+# Xv_cancer_n = normminmax_cancer.normaliza(Xv_cancer)
+# Xp_cancer_n = normminmax_cancer.normaliza(Xp_cancer)
 
-# Paso 3: Ajustar los parámetros
-rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch, {"batch_tam": 16, "rate": 0.01, "rate_decay": True}, Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, n=5)
-print(f"Rendimiento medio: {rendimiento_medio}")
+# # Paso 3: Ajustar los parámetros
+# rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch, {"batch_tam": 16, "rate": 0.01, "rate_decay": True}, Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, n=5)
+# print(f"Rendimiento medio: {rendimiento_medio}")
 
-# Paso 4: Evaluar el rendimiento en el conjunto de prueba
-# En este ejemplo, mejores_parametros es un diccionario que contiene los mejores valores ajustados de los parámetros.
-clasificador_final = RegresionLogisticaMiniBatch(**mejores_parametros)
-clasificador_final.entrena(Xe_cancer_n, ye_cancer)
+# # Paso 4: Evaluar el rendimiento en el conjunto de prueba
+# # En este ejemplo, mejores_parametros es un diccionario que contiene los mejores valores ajustados de los parámetros.
+# clasificador_final = RegresionLogisticaMiniBatch(**mejores_parametros)
+# clasificador_final.entrena(Xe_cancer_n, ye_cancer)
 
-y_pred_test = clasificador_final.clasifica(Xp_cancer_n)
-rendimiento_test = np.mean(y_pred_test == yp_cancer)
+# y_pred_test = clasificador_final.clasifica(Xp_cancer_n)
+# rendimiento_test = np.mean(y_pred_test == yp_cancer)
 
-print(f"Rendimiento en el conjunto de prueba: {rendimiento_test}")
-
-
+# print(f"Rendimiento en el conjunto de prueba: {rendimiento_test}")
 
 
 # =====================================================
@@ -898,16 +886,37 @@ print(f"Rendimiento en el conjunto de prueba: {rendimiento_test}")
 # >>> 0.9
 # --------------------------------------------------------------------
 
+class RL_OvR:
+    def __init__(self, rate=0.1, rate_decay=False, batch_size=64):
+        self.rate = rate
+        self.rate_decay = rate_decay
+        self.batch_size = batch_size
+        self.clasificadores = {}
+
+    def entrena(self, X, y, n_epochs=100, salida_epoch=False):
+        clases = np.unique(y)
+        for c in clases:
+            y_c = np.where(y == c, 1, 0)
+            clasificador = RegresionLogisticaMiniBatch(
+                rate=self.rate, rate_decay=self.rate_decay, batch_size=self.batch_size
+            )
+            clasificador.entrena(X, y_c, n_epochs=n_epochs, salida_epoch=salida_epoch)
+            self.clasificadores[c] = clasificador
+
+    def clasifica(self, ejemplos):
+        resultados = []
+        for ejemplo in ejemplos:
+            clasificaciones = {}
+            for c, clasificador in self.clasificadores.items():
+                clasificacion = clasificador.clasifica([ejemplo])
+                clasificaciones[c] = clasificacion[0][0]
+
+            max_clase = max(clasificaciones, key=clasificaciones.get)
+            resultados.append(max_clase)
+
+        return resultados
 
 
-
-
-
-
-
-
-
-            
 # --------------------------------
 
 
@@ -970,20 +979,35 @@ print(f"Rendimiento en el conjunto de prueba: {rendimiento_test}")
 #   * Columna 0 ---> Columnas 0,1,2
 #   * Columna 1 ---> Columnas 3,4
 #   * Columna 2 ---> Columnas 5,6,7,8
-#   * Columna 3 ---> Columnas 9, 10,11     
+#   * Columna 3 ---> Columnas 9, 10,11
 
-    
-  
+
+def codifica_one_hot(X):
+    unique_values = np.unique(X.flatten())  # Obtener los valores únicos de todos los atributos
+    num_values = len(unique_values)
+    num_samples, num_features = X.shape
+
+    encoded_X = np.zeros((num_samples, num_features * num_values))  # Crear el array codificado
+
+    for i in range(num_samples):
+        for j in range(num_features):
+            value = X[i, j]
+            index = np.where(unique_values == value)[0][0]  # Obtener el índice del valor en unique_values
+            encoded_X[i, j * num_values + index] = 1  # Asignar 1 en la posición correspondiente
+
+    return encoded_X
+
+
+Xc=np.array([["a",1,"c","x"],
+                 ["b",2,"c","y"],
+                 ["c",1,"d","x"],
+                 ["a",2,"d","z"],
+                 ["c",1,"e","y"],
+                 ["c",2,"f","y"]])
+
+# print(codifica_one_hot(Xc))
 
 # -------- 
-
-
-
-
-
-
-
-
 
 
 # =====================================================
