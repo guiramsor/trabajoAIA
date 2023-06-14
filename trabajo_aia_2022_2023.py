@@ -587,11 +587,13 @@ class RegresionLogisticaMiniBatch():
         return expit(x)
 
     def entropia_cruzada(self, y, y_pred):
-        return np.mean(-(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred)))
+        return np.sum(np.where(y == 1, -np.log(y_pred), -np.log(1 - y_pred)))
+        # return np.where(-(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred)))
 
     def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
         self.classes = np.unique(y)
-        self.weights = np.zeros(X.shape[1])
+        # self.weights = np.zeros(X.shape[1])
+        self.weights = np.random.rand(X.shape[1])
 
         if Xv is None:
             Xv = X
@@ -658,8 +660,8 @@ class RegresionLogisticaMiniBatch():
         y_pred_class = np.where(y_pred >= 0.5, self.classes[1], self.classes[0])
         return y_pred_class
 
-# lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
-# lr_cancer.entrena(Xe_cancer_n,ye_cancer,Xv_cancer_n,yv_cancer,salida_epoch=True,early_stopping=True)
+lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
+lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
 
 # ------------------------------------------------------------------------------
 
@@ -999,11 +1001,11 @@ def codifica_one_hot(X):
 
 
 Xc=np.array([["a",1,"c","x"],
-                 ["b",2,"c","y"],
-                 ["c",1,"d","x"],
-                 ["a",2,"d","z"],
-                 ["c",1,"e","y"],
-                 ["c",2,"f","y"]])
+             ["b",2,"c","y"],
+             ["c",1,"d","x"],
+             ["a",2,"d","z"],
+             ["c",1,"e","y"],
+             ["c",2,"f","y"]])
 
 # print(codifica_one_hot(Xc))
 
