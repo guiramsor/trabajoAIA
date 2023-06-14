@@ -660,8 +660,8 @@ class RegresionLogisticaMiniBatch():
         y_pred_class = np.where(y_pred >= 0.5, self.classes[1], self.classes[0])
         return y_pred_class
 
-lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
-lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
+# lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
+# lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
 
 # ------------------------------------------------------------------------------
 
@@ -832,6 +832,8 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 # print(f"Rendimiento en el conjunto de prueba: {rendimiento_test}")
 
 
+
+
 # =====================================================
 # EJERCICIO 6: CLASIFICACIÓN MULTICLASE CON ONE vs REST
 # =====================================================
@@ -888,37 +890,52 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 # >>> 0.9
 # --------------------------------------------------------------------
 
-class RL_OvR:
-    def __init__(self, rate=0.1, rate_decay=False, batch_size=64):
+import numpy as np
+from scipy.special import expit
+
+class ClasificadorNoEntrenado(Exception):
+    pass
+
+class RL_OvR():
+    def __init__(self, rate=0.1, rate_decay=False, batch_tam=64):
         self.rate = rate
         self.rate_decay = rate_decay
-        self.batch_size = batch_size
-        self.clasificadores = {}
+        self.batch_tam = batch_tam
+        self.classifiers = {}
 
     def entrena(self, X, y, n_epochs=100, salida_epoch=False):
-        clases = np.unique(y)
-        for c in clases:
-            y_c = np.where(y == c, 1, 0)
-            clasificador = RegresionLogisticaMiniBatch(
-                rate=self.rate, rate_decay=self.rate_decay, batch_size=self.batch_size
-            )
-            clasificador.entrena(X, y_c, n_epochs=n_epochs, salida_epoch=salida_epoch)
-            self.clasificadores[c] = clasificador
+        self.classes = np.unique(y)
+        for c in self.classes:
+            y_binary = np.where(y == c, 1, 0)
+            classifier = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
+            classifier.entrena(X, y_binary, n_epochs=n_epochs, salida_epoch=salida_epoch)
+            self.classifiers[c] = classifier
 
     def clasifica(self, ejemplos):
-        resultados = []
-        for ejemplo in ejemplos:
-            clasificaciones = {}
-            for c, clasificador in self.clasificadores.items():
-                clasificacion = clasificador.clasifica([ejemplo])
-                clasificaciones[c] = clasificacion[0][0]
+        if not self.classifiers:
+            raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
 
-            max_clase = max(clasificaciones, key=clasificaciones.get)
-            resultados.append(max_clase)
+        y_pred = []
+        for _, classifier in self.classifiers.items():
+            y_pred.append(classifier.clasifica_prob(ejemplos))
 
-        return resultados
+        y_pred = np.array(y_pred)
+        y_pred_class = np.argmax(y_pred, axis=0)
+        return y_pred_class
 
 
+Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
+rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
+rl_iris_ovr.entrena(Xe_iris, ye_iris)
+# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+
+# Esta clase RL_OvR mantiene un diccionario de clasificadores binarios, donde cada
+# clasificador se entrena para predecir una clase específica frente al resto. La 
+# función entrena itera sobre todas las clases únicas en los datos de entrenamiento
+#  y entrena un clasificador binario para cada una. Luego, la función clasifica 
+# calcula la probabilidad de pertenencia a cada clase utilizando todos los clasificadores
+# y devuelve la clase con la mayor probabilidad.
 # --------------------------------
 
 
@@ -1073,8 +1090,71 @@ Xc=np.array([["a",1,"c","x"],
 
 
 # --------------------------------------------------------------------------
+# import os
+# import numpy as np
+# import zipfile
+
+# def leer_datos():
+#     if not os.path.exists("datos/digits"):
+#         with zipfile.ZipFile("datos/digitdata.zip", "r") as zip_ref:
+#             zip_ref.extractall("datos/digits")
+
+#     with open("datos/digits/trainingimages", "r") as f:
+#         lines = f.readlines()
+#         print(lines[:10])  # Imprimir las primeras 10 líneas de los datos de entrenamiento
+
+#     X_train = np.loadtxt("datos/digits/trainingimages", delimiter=" ", dtype=str, usecols=range(28*28))
+#     X_train[X_train == ''] = '0'
+#     X_train = X_train.astype(int)
+#     y_train = np.loadtxt("datos/digits/traininglabels", dtype=int)
+#     X_test = np.loadtxt("datos/digits/testimages", delimiter=" ", dtype=int, usecols=range(28*28))
+#     X_test[X_test == ''] = '0'
+#     X_test = X_test.astype(int)
+#     y_test = np.loadtxt("datos/digits/testlabels", dtype=int)
+
+#     # Procesar imágenes
+#     X_train = procesar_imagenes(X_train)
+#     X_test = procesar_imagenes(X_test)
+
+#     return X_train, X_test, y_train, y_test
 
 
+# def procesar_imagenes(X):
+#     X_processed = np.zeros((len(X), 28, 28), dtype=int)
+#     for i, image in enumerate(X):
+#         for j, row in enumerate(image):
+#             X_processed[i, j] = [0 if c in [" "] else 1 for c in row]
+#             # X_processed[i, j] = [0 if c in [" ", "+"] else 1 for c in row]
+#     return X_processed
+
+
+# def particion_entr_prueba(X, y):
+#     indices = np.arange(len(X))
+#     np.random.shuffle(indices)
+#     train_indices = indices[:int(0.8 * len(X))]
+#     test_indices = indices[int(0.8 * len(X)):]
+
+#     X_train = X[train_indices]
+#     y_train = y[train_indices]
+#     X_test = X[test_indices]
+#     y_test = y[test_indices]
+
+#     return X_train, X_test, y_train, y_test
+
+
+# X_train, X_test, y_train, y_test = leer_datos()
+
+# X_train, X_val, y_train, y_val = particion_entr_prueba(X_train, y_train)
+
+# rl_ovr = RL_OvR(rate=0.001, batch_tam=8)
+# rl_ovr.entrena(X_train, y_train, n_epochs=100, salida_epoch=True)
+
+# # Clasificar los ejemplos de prueba
+# y_pred = rl_ovr.clasifica(X_test)
+
+# # Evaluar el rendimiento
+# accuracy = np.mean(y_pred == y_test)
+# print("Rendimiento en prueba:", accuracy)
 
 
 
