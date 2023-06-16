@@ -184,31 +184,30 @@ import carga_datos as cd
 import numpy as np
 
 def particion_entr_prueba(X, y, test=0.20):
+    # Obtener los valores únicos de clasificación
+    clases = np.unique(y)
     
-    # En un inicio, inicializamos los conjuntos de entrenamiento y prueba vacíos
+    # Inicializar los conjuntos de entrenamiento y prueba
     X_train = []
     y_train = []
     X_test = []
     y_test = []
     
-    # Obtenemos los valores únicos de clasificación aplicando el método unique
-    clases = np.unique(y)
-
     for c in clases:
-        # Para cada clase, obtenemos sus índices correspondientes
+        # Obtener los índices correspondientes a la clase actual
         index_class = np.where(y == c)[0]
    
-        # Calculamos el tamaño del conjunto de prueba
+        # Calcular el tamaño del conjunto de prueba para la clase actual
         test_size = int(len(index_class) * test)
 
-        # Aplicamos el método suffle para aleatorizar los índices
+        # Generar índices aleatorios para la partición de prueba
         np.random.shuffle(index_class)
         index_test = index_class[:test_size]
         
-        # Usamos los índices restantes para el entrenamiento
+        # Obtener los índices restantes para la partición de entrenamiento
         index_train = np.setdiff1d(index_class, index_test)
         
-        # Agregamos los datos a sus respectivos conjuntos
+        # Agregar los datos a los conjuntos de entrenamiento y prueba
         X_train.append(X[index_train])
         y_train.append(y[index_train])
         X_test.append(X[index_test])
@@ -308,7 +307,7 @@ normst_cancer = NormalizadorStandard()
 normst_cancer.ajusta(Xe_cancer)
 
 Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
-# print(np.mean(Xe_cancer_n)))
+# print(np.mean(Xe_cancer_n))
 # print(np.std(Xe_cancer_n))
 Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
@@ -965,9 +964,6 @@ def clasifBin_cancer():
 
 # clasifBin_cancer()
 
-
-
-
 # =====================================================
 # EJERCICIO 6: CLASIFICACIÓN MULTICLASE CON ONE vs REST
 # =====================================================
@@ -1181,29 +1177,7 @@ Xc=np.array([["a",1,"c","x"],
 
 # ----------------------
 
-# NO VAAAA
-# # Codificar los datos de entrada utilizando one-hot encoding
-# X_encoded = codifica_one_hot(cd.X_credito)
 
-# # Crear el clasificador OvR
-# clf = RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
-
-# # Entrenar el clasificador
-# clf.entrena(X_encoded, cd.y_credito, n_epochs=100, salida_epoch=False)
-
-# # Datos de prueba
-# X_prueba = np.array([[1, 0, 1, 0],
-#                      [0, 1, 1, 1]])
-
-# # Codificar los datos de prueba utilizando one-hot encoding
-# X_prueba_encoded = codifica_one_hot(X_prueba)
-
-# # Realizar la clasificación
-# y_pred = clf.clasifica(X_prueba_encoded)
-
-# # Imprimir los resultados
-# for ejemplo, prediccion in zip(X_prueba, y_pred):
-#     print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
 
 
 
