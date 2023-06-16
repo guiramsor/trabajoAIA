@@ -39,6 +39,8 @@ from datos import votos
 X_votos=votos.datos
 y_votos=votos.clasif
 
+print(X_votos)
+
 
 
 #--------------------------------------------------

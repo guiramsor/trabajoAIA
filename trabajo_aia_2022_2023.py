@@ -673,10 +673,10 @@ class RegresionLogisticaMiniBatch():
             for i in range(0, len(X), self.batch_tam):
                 indices_batch = indices[i:i + self.batch_tam]
                 X_batch = X[indices_batch]
-                y_batch = y[indices_batch]
+                # y_batch = y[indices_batch]
 
                 y_pred = self.sigmoide(np.dot(X_batch, self.weights))
-                gradient = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
+                gradient = np.dot(X_batch.T, y_pred - indices_batch) / len(X_batch)
                 self.weights -= rate_n * gradient
 
             if salida_epoch:
@@ -717,8 +717,8 @@ class RegresionLogisticaMiniBatch():
         y_pred_class = np.where(y_pred >= 0.5, self.classes[1], self.classes[0])
         return y_pred_class
 
-# lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
-# lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
+lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
+lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
 
 # ------------------------------------------------------------------------------
 
@@ -888,7 +888,7 @@ def clasifBin_votos():
                     'batch_tam': batch_tam
                 }
                 rendimiento = rendimiento_validacion_cruzada(
-                    RegresionLogisticaMiniBatch, params, Xe_votos_n, ye_votos2, Xv_votos_n, yp_votos
+                    RegresionLogisticaMiniBatch, params, Xe_votos_n, ye_votos, Xv_votos_n, yv_votos
                 )
                 print(f"Parámetros: {params}, Rendimiento medio: {rendimiento}")
 
@@ -897,19 +897,22 @@ def clasifBin_votos():
                     mejores_parametros_votos = params
 
     # Entrenamiento final con los mejores parámetros Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer
-    lr_votos.entrena(Xe_votos_n, ye_votos, Xv_votos_n, yp_votos, salida_epoch=True, early_stopping=True, **mejores_parametros_votos)
+    lr_votos.entrena(Xe_votos_n, ye_votos, Xv_votos_n, yv_votos, salida_epoch=True, early_stopping=True, **mejores_parametros_votos)
 
     # Evaluación en conjunto de prueba
-    rendimiento_prueba_votos = np.mean(lr_votos.clasifica(Xe_votos_n) == ye_votos2)
+    rendimiento_prueba_votos = np.mean(lr_votos.clasifica(Xe_votos_n) == ye_votos)
     print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_votos}")
 
-Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
-Xe_votos2,Xp_votos2,ye_votos2,yp_votos2=particion_entr_prueba(Xe_votos,ye_votos,test=1/3)
+Xev_votos,Xp_votos,yev_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
+Xe_votos,Xv_votos,ye_votos,yv_votos=particion_entr_prueba(Xev_votos,yev_votos,test=1/3)
+
 normst_votos = NormalizadorStandard()
-normst_votos.ajusta(Xe_votos2)
-Xe_votos_n = normst_votos.normaliza(Xe_cancer)
-Xv_votos_n = normst_votos.normaliza(Xp_votos2)
-Xp_votos_n = normst_votos.normaliza(yp_votos)
+normst_votos.ajusta(Xe_votos)
+
+Xe_votos_n = normst_votos.normaliza(Xe_votos)
+Xv_votos_n = normst_votos.normaliza(Xv_votos)
+Xp_votos_n = normst_votos.normaliza(Xp_votos)
+
 clasifBin_votos()
 
 def clasifBin_cancer():
@@ -952,12 +955,14 @@ def clasifBin_cancer():
 
 # Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(cd.X_cancer,cd.y_cancer,test=0.2)
 # Xe_cancer,Xv_cancer,ye_cancer,yv_cancer=particion_entr_prueba(Xev_cancer,yev_cancer,test=0.2)
+
 # normst_cancer = NormalizadorStandard()
 # normst_cancer.ajusta(Xe_cancer)
 # Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
 # Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 # Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
-# clasifBin_cancer()
+
+clasifBin_cancer()
 
 # =====================================================
 # EJERCICIO 6: CLASIFICACIÓN MULTICLASE CON ONE vs REST
