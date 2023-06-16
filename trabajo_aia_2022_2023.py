@@ -590,10 +590,69 @@ class RegresionLogisticaMiniBatch():
         return np.sum(np.where(y == 1, -np.log(y_pred), -np.log(1 - y_pred)))
         # return np.where(-(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred)))
 
-    def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
+    # def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
+    #     self.classes = np.unique(y)
+    #     # self.weights = np.zeros(X.shape[1])
+    #     self.weights = np.random.rand(X.shape[1])
+
+    #     if Xv is None:
+    #         Xv = X
+    #         yv = y
+
+    #     best_loss = float('inf')
+    #     epochs_without_improvement = 0
+
+    #     for epoch in range(n_epochs):
+    #         if self.rate_decay:
+    #             rate_n = self.rate / (1 + epoch)
+    #         else:
+    #             rate_n = self.rate
+
+    #         indices = np.arange(len(X))
+    #         np.random.shuffle(indices)
+
+    #         for i in range(0, len(X), self.batch_tam):
+    #             indices_batch = indices[i:i + self.batch_tam]
+    #             X_batch = X[indices_batch]
+    #             y_batch = y[indices_batch]
+
+    #             y_pred = self.sigmoide(np.dot(X_batch, self.weights))
+    #             gradient = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
+    #             self.weights -= rate_n * gradient
+
+    #         if salida_epoch:
+    #             y_pred_train = self.clasifica_prob(X)
+    #             loss_train = self.entropia_cruzada(y, y_pred_train)
+    #             acc_train = np.mean(self.clasifica(X) == y)
+
+    #             y_pred_val = self.clasifica_prob(Xv)
+    #             loss_val = self.entropia_cruzada(yv, y_pred_val)
+    #             acc_val = np.mean(self.clasifica(Xv) == yv)
+
+    #             print(f"Epoch {epoch + 1}:")
+    #             print(f"  en entrenamiento EC: {loss_train:.4f}, rendimiento: {acc_train:.4f}")
+    #             #print(f"  Rendimiento (entrenamiento): {acc_train:.4f}")
+    #             print(f"  en entrenamiento EC: {loss_val:.4f}, rendimiento: {acc_val:.4f}")
+    #             #print(f"  Rendimiento (validación): {acc_val:.4f}")
+
+    #             if early_stopping and loss_val < best_loss:
+    #                 best_loss = loss_val
+    #                 epochs_without_improvement = 0
+    #             elif early_stopping:
+    #                 epochs_without_improvement += 1
+
+    #             if early_stopping and epochs_without_improvement >= paciencia:
+    #                 print("PARADA TEMPRANA")
+    #                 break
+    def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3, rate=None, rate_decay=False, batch_tam=None):
         self.classes = np.unique(y)
-        # self.weights = np.zeros(X.shape[1])
         self.weights = np.random.rand(X.shape[1])
+
+        if rate is not None:
+            self.rate = rate
+
+        if batch_tam is not None:
+            self.batch_tam = batch_tam
 
         if Xv is None:
             Xv = X
@@ -631,9 +690,7 @@ class RegresionLogisticaMiniBatch():
 
                 print(f"Epoch {epoch + 1}:")
                 print(f"  en entrenamiento EC: {loss_train:.4f}, rendimiento: {acc_train:.4f}")
-                #print(f"  Rendimiento (entrenamiento): {acc_train:.4f}")
                 print(f"  en entrenamiento EC: {loss_val:.4f}, rendimiento: {acc_val:.4f}")
-                #print(f"  Rendimiento (validación): {acc_val:.4f}")
 
                 if early_stopping and loss_val < best_loss:
                     best_loss = loss_val
@@ -778,7 +835,9 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 # rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch,{"batch_tam":16,"rate":0.01,"rate_decay":True},Xe_cancer_n,ye_cancer,n=5)
 # print(f"Rendimiento medio: {rendimiento_medio}")
 
-
+# lr16=RegresionLogisticaMiniBatch(batch_tam=16,rate=0.01,rate_decay=True)
+# lr16.entrena(Xe_cancer_n,ye_cancer)
+# print(rendimiento(lr16,Xp_cancer_n,yp_cancer))
 
 # ===================================================
 # EJERCICIO 5: APLICANDO LOS CLASIFICADORES BINARIOS
@@ -806,33 +865,99 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 # rendimiento durante un entrenamiento.     
 
 # ----------------------------
+def clasifBin_votos():
+    lr_votos = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
-# import numpy as np
+    # Ajuste de parámetros
+    params_votos = {
+        'rate': [0.1, 0.01, 0.001],
+        'rate_decay': [True, False],
+        'batch_tam': [32, 64, 128]
+    }
 
-# # Paso 2: Preprocesar los datos
-# normminmax_cancer = NormalizadorMinMax()
-# normminmax_cancer.ajusta(Xe_cancer)
+    mejor_rendimiento_votos = 0
+    mejores_parametros_votos = {}
 
-# Xe_cancer_n = normminmax_cancer.normaliza(Xe_cancer)
-# Xv_cancer_n = normminmax_cancer.normaliza(Xv_cancer)
-# Xp_cancer_n = normminmax_cancer.normaliza(Xp_cancer)
+    # Búsqueda de los mejores parámetros
+    for rate in params_votos['rate']:
+        for rate_decay in params_votos['rate_decay']:
+            for batch_tam in params_votos['batch_tam']:
+                params = {
+                    'rate': rate,
+                    'rate_decay': rate_decay,
+                    'batch_tam': batch_tam
+                }
+                rendimiento = rendimiento_validacion_cruzada(
+                    RegresionLogisticaMiniBatch, params, Xe_votos_n, ye_votos2, Xv_votos_n, yp_votos
+                )
+                print(f"Parámetros: {params}, Rendimiento medio: {rendimiento}")
 
-# # Paso 3: Ajustar los parámetros
-# rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch, {"batch_tam": 16, "rate": 0.01, "rate_decay": True}, Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, n=5)
-# print(f"Rendimiento medio: {rendimiento_medio}")
+                if rendimiento > mejor_rendimiento_votos:
+                    mejor_rendimiento_votos = rendimiento
+                    mejores_parametros_votos = params
 
-# # Paso 4: Evaluar el rendimiento en el conjunto de prueba
-# # En este ejemplo, mejores_parametros es un diccionario que contiene los mejores valores ajustados de los parámetros.
-# clasificador_final = RegresionLogisticaMiniBatch(**mejores_parametros)
-# clasificador_final.entrena(Xe_cancer_n, ye_cancer)
+    # Entrenamiento final con los mejores parámetros Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer
+    lr_votos.entrena(Xe_votos_n, ye_votos, Xv_votos_n, yp_votos, salida_epoch=True, early_stopping=True, **mejores_parametros_votos)
 
-# y_pred_test = clasificador_final.clasifica(Xp_cancer_n)
-# rendimiento_test = np.mean(y_pred_test == yp_cancer)
+    # Evaluación en conjunto de prueba
+    rendimiento_prueba_votos = np.mean(lr_votos.clasifica(Xe_votos_n) == ye_votos2)
+    print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_votos}")
 
-# print(f"Rendimiento en el conjunto de prueba: {rendimiento_test}")
+Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
+Xe_votos2,Xp_votos2,ye_votos2,yp_votos2=particion_entr_prueba(Xe_votos,ye_votos,test=1/3)
+normst_votos = NormalizadorStandard()
+normst_votos.ajusta(Xe_votos2)
+Xe_votos_n = normst_votos.normaliza(Xe_cancer)
+Xv_votos_n = normst_votos.normaliza(Xp_votos2)
+Xp_votos_n = normst_votos.normaliza(yp_votos)
+clasifBin_votos()
 
+def clasifBin_cancer():
+    lr_cancer = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
+    # Ajuste de parámetros
+    params_cancer = {
+        'rate': [0.1, 0.01, 0.001],
+        'rate_decay': [True, False],
+        'batch_tam': [16, 32, 64]
+    }
 
+    mejor_rendimiento_cancer = 0
+    mejores_parametros_cancer = {}
+
+    # Búsqueda de los mejores parámetros
+    for rate in params_cancer['rate']:
+        for rate_decay in params_cancer['rate_decay']:
+            for batch_tam in params_cancer['batch_tam']:
+                params = {
+                    'rate': rate,
+                    'rate_decay': rate_decay,
+                    'batch_tam': batch_tam
+                }
+                rendimiento = rendimiento_validacion_cruzada(
+                    RegresionLogisticaMiniBatch, params, Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer
+                )
+                print(f"Parámetros: {params}, Rendimiento medio: {rendimiento}")
+
+                if rendimiento > mejor_rendimiento_cancer:
+                    mejor_rendimiento_cancer = rendimiento
+                    mejores_parametros_cancer = params
+
+    # Entrenamiento final con los mejores parámetros
+    lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True, **mejores_parametros_cancer)
+
+    # Evaluación en conjunto de prueba
+    rendimiento_prueba_cancer = np.mean(lr_cancer.clasifica(Xe_cancer_n) == ye_cancer)
+    print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_cancer}")
+
+# Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(cd.X_cancer,cd.y_cancer,test=0.2)
+# Xe_cancer,Xv_cancer,ye_cancer,yv_cancer=particion_entr_prueba(Xev_cancer,yev_cancer,test=0.2)
+# normst_cancer = NormalizadorStandard()
+# normst_cancer.ajusta(Xe_cancer)
+# Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
+# Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
+# Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
+# clasifBin_cancer()
 
 # =====================================================
 # EJERCICIO 6: CLASIFICACIÓN MULTICLASE CON ONE vs REST
@@ -1101,13 +1226,13 @@ Xc=np.array([["a",1,"c","x"],
 
 #     with open("datos/digits/trainingimages", "r") as f:
 #         lines = f.readlines()
-#         print(lines[:10])  # Imprimir las primeras 10 líneas de los datos de entrenamiento
+#         #print(lines[:10])  # Imprimir las primeras 10 líneas de los datos de entrenamiento
 
-#     X_train = np.loadtxt("datos/digits/trainingimages", delimiter=" ", dtype=str, usecols=range(28*28))
+#     X_train = np.loadtxt("datos/digits/trainingimages", delimiter=" ", dtype=str, usecols=range(29*29))
 #     X_train[X_train == ''] = '0'
 #     X_train = X_train.astype(int)
 #     y_train = np.loadtxt("datos/digits/traininglabels", dtype=int)
-#     X_test = np.loadtxt("datos/digits/testimages", delimiter=" ", dtype=int, usecols=range(28*28))
+#     X_test = np.loadtxt("datos/digits/testimages", delimiter=" ", dtype=int, usecols=range(29*29))
 #     X_test[X_test == ''] = '0'
 #     X_test = X_test.astype(int)
 #     y_test = np.loadtxt("datos/digits/testlabels", dtype=int)
