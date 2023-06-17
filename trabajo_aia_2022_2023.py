@@ -185,7 +185,7 @@ import numpy as np
 
 def particion_entr_prueba(X, y, test=0.20):
     
-    # En un inicio, inicializamos los conjuntos de entrenamiento y prueba vacíos
+    # Comenzamos inicializando los conjuntos de entrenamiento y prueba (vacíos)
     X_train = []
     y_train = []
     X_test = []
@@ -196,25 +196,25 @@ def particion_entr_prueba(X, y, test=0.20):
 
     for c in clases:
         # Para cada clase, obtenemos sus índices correspondientes
-        index_class = np.where(y == c)[0]
+        indice_clase = np.where(y == c)[0]
    
         # Calculamos el tamaño del conjunto de prueba
-        test_size = int(len(index_class) * test)
+        tam_test = int(len(indice_clase) * test)
 
-        # Aplicamos el método suffle para aleatorizar los índices
-        np.random.shuffle(index_class)
-        index_test = index_class[:test_size]
+        # Aplicamos el método shuffle para aleatorizar los índices
+        np.random.shuffle(indice_clase)
+        indice_test = indice_clase[:tam_test]
         
         # Usamos los índices restantes para el entrenamiento
-        index_train = np.setdiff1d(index_class, index_test)
+        indice_entr = np.setdiff1d(indice_clase, indice_test)
         
         # Agregamos los datos a sus respectivos conjuntos
-        X_train.append(X[index_train])
-        y_train.append(y[index_train])
-        X_test.append(X[index_test])
-        y_test.append(y[index_test])
+        X_train.append(X[indice_entr])
+        y_train.append(y[indice_entr])
+        X_test.append(X[indice_test])
+        y_test.append(y[indice_test])
     
-    # Concatenar los conjuntos de entrenamiento y prueba
+    # Reconvertimos los conjuntos a un array unidimensional
     X_train = np.concatenate(X_train)
     y_train = np.concatenate(y_train)
     X_test = np.concatenate(X_test)
@@ -290,7 +290,7 @@ class NormalizadorStandard():
 
     def normaliza(self,X):
         if self.media is None or self.desviacion is None:
-            raise NormalizadorNoAjustado("No ajustado el Normalizador")
+            raise NormalizadorNoAjustado("Normalizador no ajustado")
         X_normalizado = (X - self.media) / self.desviacion
         return X_normalizado
 
@@ -304,14 +304,14 @@ class NormalizadorStandard():
 
 class NormalizadorNoAjustado(Exception): pass
 
-normst_cancer = NormalizadorStandard()
-normst_cancer.ajusta(Xe_cancer)
+normStd_cancer = NormalizadorStandard()
+normStd_cancer.ajusta(Xe_cancer)
 
-Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
-# print(np.mean(Xe_cancer_n)))
-# print(np.std(Xe_cancer_n))
-Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
-Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
+Xe_cancer_n = normStd_cancer.normaliza(Xe_cancer)
+# print(round(np.mean(Xe_cancer_n)))
+# print(round(np.std(Xe_cancer_n)))
+Xv_cancer_n = normStd_cancer.normaliza(Xv_cancer)
+Xp_cancer_n = normStd_cancer.normaliza(Xp_cancer)
 
 # print("Xe_cancer_n: ", Xe_cancer_n, "\n",
 #                 "Xv_cancer_n: ", Xv_cancer_n, "\n",
@@ -364,20 +364,20 @@ class NormalizadorMinMax():
 
     def normaliza(self,X):
         if self.minimo is None or self.maximo is None:
-            raise NormalizadorNoAjustado("No ajustado el Normalizador")
+            raise NormalizadorNoAjustado("Normalizador no ajustado")
         X_normalizado = (X - self.minimo) / (self.maximo - self.minimo)
         return X_normalizado
 
-normminmax_cancer=NormalizadorMinMax()
-normminmax_cancer.ajusta(Xe_cancer)
+normMM_cancer=NormalizadorMinMax()
+normMM_cancer.ajusta(Xe_cancer)
 
 
-Xe_cancer_m=normminmax_cancer.normaliza(Xe_cancer)
-# print(np.mean(Xe_cancer_n))
-# print(np.std(Xe_cancer_n))
-Xv_cancer_m=normminmax_cancer.normaliza(Xv_cancer)
-Xp_cancer_m=normminmax_cancer.normaliza(Xp_cancer)
-
+Xe_cancer_m=normMM_cancer.normaliza(Xe_cancer)
+Xv_cancer_m=normMM_cancer.normaliza(Xv_cancer)
+Xp_cancer_m=normMM_cancer.normaliza(Xp_cancer)
+# print(Xe_cancer_m)
+# print(Xv_cancer_m)
+# print(Xp_cancer_m)
 
 # ===========================================
 # EJERCICIO 3: REGRESIÓN LOGÍSTICA MINI-BATCH
@@ -577,12 +577,13 @@ class ClasificadorNoEntrenado(Exception):
 
 class RegresionLogisticaMiniBatch():
     def __init__(self, rate=0.1, rate_decay=False, n_epochs=100, batch_tam=64):
-        self.rate = rate
+        self.rate = rate  
         self.rate_decay = rate_decay
         self.n_epochs = n_epochs
         self.batch_tam = batch_tam
-        self.weights = None
-        self.classes = []
+        self.pesos = None # Inicializamos pesos y clases en el método init
+        self.clases = []  # ya que será útil su uso en distintas funciones
+                          # y su valor debe almacenarse a modo de var estática 
 
     def sigmoide(self, x):
         return expit(x)
@@ -591,136 +592,85 @@ class RegresionLogisticaMiniBatch():
         return np.sum(np.where(y == 1, -np.log(y_pred), -np.log(1 - y_pred)))
         # return np.where(-(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred)))
 
-    # def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
-    #     self.classes = np.unique(y)
-    #     # self.weights = np.zeros(X.shape[1])
-    #     self.weights = np.random.rand(X.shape[1])
+    def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
 
-    #     if Xv is None:
-    #         Xv = X
-    #         yv = y
-
-    #     best_loss = float('inf')
-    #     epochs_without_improvement = 0
-
-    #     for epoch in range(n_epochs):
-    #         if self.rate_decay:
-    #             rate_n = self.rate / (1 + epoch)
-    #         else:
-    #             rate_n = self.rate
-
-    #         indices = np.arange(len(X))
-    #         np.random.shuffle(indices)
-
-    #         for i in range(0, len(X), self.batch_tam):
-    #             indices_batch = indices[i:i + self.batch_tam]
-    #             X_batch = X[indices_batch]
-    #             y_batch = y[indices_batch]
-
-    #             y_pred = self.sigmoide(np.dot(X_batch, self.weights))
-    #             gradient = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
-    #             self.weights -= rate_n * gradient
-
-    #         if salida_epoch:
-    #             y_pred_train = self.clasifica_prob(X)
-    #             loss_train = self.entropia_cruzada(y, y_pred_train)
-    #             acc_train = np.mean(self.clasifica(X) == y)
-
-    #             y_pred_val = self.clasifica_prob(Xv)
-    #             loss_val = self.entropia_cruzada(yv, y_pred_val)
-    #             acc_val = np.mean(self.clasifica(Xv) == yv)
-
-    #             print(f"Epoch {epoch + 1}:")
-    #             print(f"  en entrenamiento EC: {loss_train:.4f}, rendimiento: {acc_train:.4f}")
-    #             #print(f"  Rendimiento (entrenamiento): {acc_train:.4f}")
-    #             print(f"  en entrenamiento EC: {loss_val:.4f}, rendimiento: {acc_val:.4f}")
-    #             #print(f"  Rendimiento (validación): {acc_val:.4f}")
-
-    #             if early_stopping and loss_val < best_loss:
-    #                 best_loss = loss_val
-    #                 epochs_without_improvement = 0
-    #             elif early_stopping:
-    #                 epochs_without_improvement += 1
-
-    #             if early_stopping and epochs_without_improvement >= paciencia:
-    #                 print("PARADA TEMPRANA")
-    #                 break
-    def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3, rate=None, rate_decay=False, batch_tam=None):
-        self.classes = np.unique(y)
-        self.weights = np.random.rand(X.shape[1])
-
-        if rate is not None:
-            self.rate = rate
-
-        if batch_tam is not None:
-            self.batch_tam = batch_tam
+        #Obtenemos el conjunto clases únicas e inicializamos los pesos de manera aleatoria.
+        self.clases = np.unique(y)
+        self.pesos = np.random.rand(X.shape[1])
 
         if Xv is None:
             Xv = X
             yv = y
 
-        best_loss = float('inf')
-        epochs_without_improvement = 0
+        # Declaramos la mejor pérdida a infinito
+        # De esta forma, si la pérdida actual es menor, aseguramos que se actualice
+        mejor_perdida = float('inf')
+        contPaciencia = 0
 
         for epoch in range(n_epochs):
-            if self.rate_decay:
-                rate_n = self.rate / (1 + epoch)
+            if(self.rate_decay==True):
+                rate_n = (self.rate)*(1/(1+epoch)) # self.rate decrecerá en cada it
             else:
-                rate_n = self.rate
+                rate_n = self.rate 
 
             indices = np.arange(len(X))
             np.random.shuffle(indices)
 
+            # Recorremos X saltando de batch en batch
             for i in range(0, len(X), self.batch_tam):
-                indices_batch = indices[i:i + self.batch_tam]
-                X_batch = X[indices_batch]
-                # y_batch = y[indices_batch]
+                indices_batch = indices[i:(i+self.batch_tam)] # Indices del batch seleccionado
+                X_batch = X[indices_batch] # Datos de X que hacen referencia a esos indices
+                y_batch = y[indices_batch]
 
-                y_pred = self.sigmoide(np.dot(X_batch, self.weights))
-                gradient = np.dot(X_batch.T, y_pred - indices_batch) / len(X_batch)
-                self.weights -= rate_n * gradient
+                y_pred = self.sigmoide(np.dot(X_batch, self.pesos))
+                gradiente = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
+                # gradiente = np.dot(X_batch.T, y_pred - y_batch)
+                self.pesos -= rate_n * gradiente
 
             if salida_epoch:
-                y_pred_train = self.clasifica_prob(X)
-                loss_train = self.entropia_cruzada(y, y_pred_train)
-                acc_train = np.mean(self.clasifica(X) == y)
+                pred_entr = self.clasifica_prob(X)
+                perdidaEntr = self.entropia_cruzada(y, pred_entr)
+                # acc_train = np.mean(self.clasifica(X) == y)
+                accuracy_entr = rendimiento(self, X, y)
 
                 y_pred_val = self.clasifica_prob(Xv)
-                loss_val = self.entropia_cruzada(yv, y_pred_val)
-                acc_val = np.mean(self.clasifica(Xv) == yv)
+                perdida = self.entropia_cruzada(yv, y_pred_val)
+                # acc_val = np.mean(self.clasifica(Xv) == yv)
+                accuracy_val = rendimiento(self, Xv, yv)
 
                 print(f"Epoch {epoch + 1}:")
-                print(f"  en entrenamiento EC: {loss_train:.4f}, rendimiento: {acc_train:.4f}")
-                print(f"  en entrenamiento EC: {loss_val:.4f}, rendimiento: {acc_val:.4f}")
+                print(f"  en entrenamiento EC: {perdidaEntr:.4f}, rendimiento: {accuracy_entr:.4f}")
+                print(f"  en validación EC: {perdida:.4f}, rendimiento: {accuracy_val:.4f}")
 
-                if early_stopping and loss_val < best_loss:
-                    best_loss = loss_val
-                    epochs_without_improvement = 0
-                elif early_stopping:
-                    epochs_without_improvement += 1
+                if early_stopping:
+                    if perdida < mejor_perdida:
+                        mejor_perdida = perdida
+                        contPaciencia = 0
+                    else: 
+                        contPaciencia += 1
 
-                if early_stopping and epochs_without_improvement >= paciencia:
-                    print("PARADA TEMPRANA")
-                    break
+                    if contPaciencia >= paciencia:
+                        print("PARADA TEMPRANA")
+                        break
+                
 
     def clasifica_prob(self, ejemplos):
-        if self.weights is None:
-            raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
+        if self.pesos is None:
+            raise ClasificadorNoEntrenado("El modelo no ha sido entrenado")
 
-        y_pred = self.sigmoide(np.dot(ejemplos, self.weights))
+        y_pred = self.sigmoide(np.dot(ejemplos, self.pesos))
         return y_pred
 
     def clasifica(self, ejemplo):
-        if self.weights is None:
-            raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
+        if self.pesos is None:
+            raise ClasificadorNoEntrenado("El modelo no ha sido entrenado")
 
-        y_pred = self.sigmoide(np.dot(ejemplo, self.weights))
-        y_pred_class = np.where(y_pred >= 0.5, self.classes[1], self.classes[0])
+        y_pred = self.sigmoide(np.dot(ejemplo, self.pesos))
+        y_pred_class = np.where(y_pred >= 0.5, self.clases[1], self.clases[0])
         return y_pred_class
 
 lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
-lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
-
+# lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
 # ------------------------------------------------------------------------------
 
 
@@ -803,30 +753,39 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
     
     rendimientos = []
     
-    indices_aleatorios = np.random.permutation(len(X))
-    particiones_X = np.array_split(X[indices_aleatorios], n)
-    particiones_y = np.array_split(y[indices_aleatorios], n)
+    # Inicializamos los indices aleatoriamente
+    indices = np.arange(len(X))
+    np.random.shuffle(indices)
+
+    # Dividimos en n partes los conjuntos de entrada
+    particiones_X = np.array_split(X[indices], n)
+    particiones_y = np.array_split(y[indices], n)
     
     for i in range(n):
+        # Asignamos en X_prueba e y_prueba la i-ésima parte dividida anteriormente
         X_prueba = particiones_X[i]
         y_prueba = particiones_y[i]
-        
+
+        # Realizamos la exclusión de dicha parte y almacenamos el resultado en particiones_entrenamiento
         particiones_entrenamiento_X = particiones_X[:i] + particiones_X[i+1:]
         particiones_entrenamiento_y = particiones_y[:i] + particiones_y[i+1:]
         
+        # Aplanamos el array a una única dimensión
         X_entrenamiento = np.concatenate(particiones_entrenamiento_X)
         y_entrenamiento = np.concatenate(particiones_entrenamiento_y)
         
+        # Llamamos al clasificador con los parámetros de entrada propuestos
+        # entre llaves y entrenamos el clasificador
         clasificador = clase_clasificador(**params)
         clasificador.entrena(X_entrenamiento, y_entrenamiento)
         
-        y_pred = clasificador.clasifica(X_prueba)
-        rendimiento = np.mean(y_pred == y_prueba)
+        # Calculamos el rendimiento para cada partición
+        rend = rendimiento(clasificador, X_prueba, y_prueba)
+        rendimientos.append(rend)
         
-        rendimientos.append(rendimiento)
-        
-        print(f"Partición {i+1}. Rendimiento: {rendimiento}")
+        print(f"Partición {i+1}. Rendimiento: {rend}")
     
+    # Finalmente se calcula el rendimiento medio haciendo uso de numpy (np.mean)
     rendimiento_medio = np.mean(rendimientos)
     
     return rendimiento_medio
@@ -839,6 +798,9 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 # lr16=RegresionLogisticaMiniBatch(batch_tam=16,rate=0.01,rate_decay=True)
 # lr16.entrena(Xe_cancer_n,ye_cancer)
 # print(rendimiento(lr16,Xp_cancer_n,yp_cancer))
+
+
+
 
 # ===================================================
 # EJERCICIO 5: APLICANDO LOS CLASIFICADORES BINARIOS
@@ -869,17 +831,21 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 def clasifBin_votos():
     lr_votos = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
-    # Ajuste de parámetros
+    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_votos
+    # según el rendimiento asociado a la combinatoria de parámetros que estemos 
+    # evaluando (ahora declararemos los valores de params)
+    mejor_rendimiento_votos = 0
+    mejor_rendimiento_votos = {}
+
+    # Asociamos los posibles valores para rate, rate_decay y batch_tam
     params_votos = {
         'rate': [0.1, 0.01, 0.001],
         'rate_decay': [True, False],
         'batch_tam': [32, 64, 128]
     }
-
-    mejor_rendimiento_votos = 0
-    mejores_parametros_votos = {}
-
-    # Búsqueda de los mejores parámetros
+    
+    # Realizamos una búsqueda de los mejores parámetros de forma clásica
+    # mediante bucles for y actualizando los mejores valores
     for rate in params_votos['rate']:
         for rate_decay in params_votos['rate_decay']:
             for batch_tam in params_votos['batch_tam']:
@@ -897,11 +863,11 @@ def clasifBin_votos():
                     mejor_rendimiento_votos = rendimiento
                     mejores_parametros_votos = params
 
-    # Entrenamiento final con los mejores parámetros Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer
+    # Aplicamos el método entrena de RegresionLogisticaMiniBatch con los mejores parámetros obtenidos
     lr_votos.entrena(Xe_votos_n, ye_votos, Xv_votos_n, yv_votos, salida_epoch=True, early_stopping=True, **mejores_parametros_votos)
 
-    # Evaluación en conjunto de prueba
-    rendimiento_prueba_votos = np.mean(lr_votos.clasifica(Xe_votos_n) == ye_votos)
+    # Evaluamos el conjunto de prueba
+    rendimiento_prueba_votos = rendimiento(Xe_votos_n, ye_votos)
     print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_votos}")
 
 Xev_votos,Xp_votos,yev_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
@@ -919,7 +885,9 @@ Xp_votos_n = normst_votos.normaliza(Xp_votos)
 def clasifBin_cancer():
     lr_cancer = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
-    # Ajuste de parámetros
+    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_votos
+    # y mejor_rendimiento_votos según el rendimiento asociado a la combinatoria de
+    # parámetros que estemos evaluando (ahora declararemos los valores de params)
     params_cancer = {
         'rate': [0.1, 0.01, 0.001],
         'rate_decay': [True, False],
@@ -929,7 +897,8 @@ def clasifBin_cancer():
     mejor_rendimiento_cancer = 0
     mejores_parametros_cancer = {}
 
-    # Búsqueda de los mejores parámetros
+    # Realizamos una búsqueda de los mejores parámetros de forma clásica
+    # mediante bucles for y actualizando los mejores valores
     for rate in params_cancer['rate']:
         for rate_decay in params_cancer['rate_decay']:
             for batch_tam in params_cancer['batch_tam']:
@@ -947,10 +916,10 @@ def clasifBin_cancer():
                     mejor_rendimiento_cancer = rendimiento
                     mejores_parametros_cancer = params
 
-    # Entrenamiento final con los mejores parámetros
+    # Aplicamos el método entrena de RegresionLogisticaMiniBatch con los mejores parámetros obtenidos
     lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True, **mejores_parametros_cancer)
 
-    # Evaluación en conjunto de prueba
+    # Evaluamos el conjunto de prueba
     rendimiento_prueba_cancer = np.mean(lr_cancer.clasifica(Xe_cancer_n) == ye_cancer)
     print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_cancer}")
 
@@ -963,7 +932,7 @@ def clasifBin_cancer():
 # Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 # Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
 
-# clasifBin_cancer()
+clasifBin_cancer()
 
 
 
@@ -1035,13 +1004,19 @@ class RL_OvR():
         self.rate = rate
         self.rate_decay = rate_decay
         self.batch_tam = batch_tam
+        # Creamos un dicc de clasificadores binarios
         self.classifiers = {}
 
     def entrena(self, X, y, n_epochs=100, salida_epoch=False):
+        # Obtenemos las clases únicas
         self.classes = np.unique(y)
+
+        # Iteramos dichas clases obtenidas en los datos de entrenamiento
+        # y entrena un clasificador binario para cada una de ellas
         for c in self.classes:
             y_binary = np.where(y == c, 1, 0)
             classifier = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
+            # Entrenamos el clasificador para la predección de clases
             classifier.entrena(X, y_binary, n_epochs=n_epochs, salida_epoch=salida_epoch)
             self.classifiers[c] = classifier
 
@@ -1049,10 +1024,12 @@ class RL_OvR():
         if not self.classifiers:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
 
+        # Calculamos la probabilidad de pertenencia para cada clase
         y_pred = []
         for _, classifier in self.classifiers.items():
             y_pred.append(classifier.clasifica_prob(ejemplos))
 
+        # Devolvemos la clase con mayor probabilidad
         y_pred = np.array(y_pred)
         y_pred_class = np.argmax(y_pred, axis=0)
         return y_pred_class
@@ -1064,12 +1041,6 @@ rl_iris_ovr.entrena(Xe_iris, ye_iris)
 # print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
 # print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
-# Esta clase RL_OvR mantiene un diccionario de clasificadores binarios, donde cada
-# clasificador se entrena para predecir una clase específica frente al resto. La 
-# función entrena itera sobre todas las clases únicas en los datos de entrenamiento
-#  y entrena un clasificador binario para cada una. Luego, la función clasifica 
-# calcula la probabilidad de pertenencia a cada clase utilizando todos los clasificadores
-# y devuelve la clase con la mayor probabilidad.
 # --------------------------------
 
 
@@ -1136,19 +1107,25 @@ rl_iris_ovr.entrena(Xe_iris, ye_iris)
 
 
 def codifica_one_hot(X):
-    unique_values = np.unique(X.flatten())  # Obtener los valores únicos de todos los atributos
-    num_values = len(unique_values)
-    num_samples, num_features = X.shape
 
-    encoded_X = np.zeros((num_samples, num_features * num_values))  # Crear el array codificado
+    # Aplanamos los atributos y obtenemos los valores únicos
+    # con el método unique de numpy
+    val_unicos = np.unique(X.flatten()) 
+    nValores = len(val_unicos)
+    nMuestras, nCaract = X.shape
 
-    for i in range(num_samples):
-        for j in range(num_features):
-            value = X[i, j]
-            index = np.where(unique_values == value)[0][0]  # Obtener el índice del valor en unique_values
-            encoded_X[i, j * num_values + index] = 1  # Asignar 1 en la posición correspondiente
+    # Creamos el array codificado
+    X_codif = np.zeros((nMuestras, nCaract * nValores))
 
-    return encoded_X
+    for i in range(nMuestras):
+        for j in range(nCaract):
+            valor = X[i, j]
+            #Obtenemos el índice del valor en val_unicos
+            indice = np.where(val_unicos == valor)[0][0]  
+            #Asignamos 1 para la posición correspondiente de del array
+            X_codif[i, j * nValores + indice] = 1  
+
+    return X_codif
 
 
 Xc=np.array([["a",1,"c","x"],
