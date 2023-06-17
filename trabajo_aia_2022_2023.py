@@ -1046,8 +1046,8 @@ class RL_OvR():
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
-print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
-print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 # --------------------------------
 
@@ -1144,7 +1144,7 @@ Xc=np.array([["a",1,"c","x"],
              ["c",1,"e","y"],
              ["c",2,"f","y"]])
 
-print(codifica_one_hot(Xc))
+# print(codifica_one_hot(Xc))
 
 # -------- 
 
@@ -1167,36 +1167,28 @@ print(codifica_one_hot(Xc))
 
 # ----------------------
 
-# NO VAAAA
-# # Codificar los datos de entrada utilizando one-hot encoding
-# X_encoded = codifica_one_hot(cd.X_credito)
+Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
 
-# # Crear el clasificador OvR
-# clf = RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
+# Codificar los datos de entrada utilizando one-hot encoding
+X_credito_codificado = codifica_one_hot(cd.X_credito)
 
-# # Entrenar el clasificador
-# clf.entrena(X_encoded, cd.y_credito, n_epochs=100, salida_epoch=False)
+# Crear y entrenar el clasificador OvR
+rl_credito_ovr = RL_OvR(rate=0.001, batch_tam=8)
+rl_credito_ovr.entrena(X_credito_codificado, cd.y_credito)
 
-# # Datos de prueba
-# X_prueba = np.array([[1, 0, 1, 0],
-#                      [0, 1, 1, 1]])
+# Ejemplo de clasificación
+ejemplo = np.array([['laboral', 'dos o más', 'ninguna', 'ninguno', 'soltero', 'altos']])
 
-# # Codificar los datos de prueba utilizando one-hot encoding
-# X_prueba_encoded = codifica_one_hot(X_prueba)
+# Codificar los datos de prueba utilizando one-hot encoding
+ejemplo_codificado = codifica_one_hot(ejemplo)
 
-# # Realizar la clasificación
-# y_pred = clf.clasifica(X_prueba_encoded)
+# Realizar la clasificación
+clase_predicha = rl_credito_ovr.clasifica(ejemplo_codificado)
+print("Clase predicha:", clase_predicha)
 
-# # Imprimir los resultados
-# for ejemplo, prediccion in zip(X_prueba, y_pred):
-#     print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
-
-
-
-
-
-
-
+# Imprimir los resultados
+for ejemplo, prediccion in zip(ejemplo, clase_predicha):
+    print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
 
 
 
