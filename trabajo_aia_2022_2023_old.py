@@ -887,6 +887,7 @@ def clasifBin_votos():
                     'rate_decay': rate_decay,
                     'batch_tam': batch_tam
                 }
+
                 rendimiento = rendimiento_validacion_cruzada(
                     RegresionLogisticaMiniBatch, params, Xe_votos_n, ye_votos, Xv_votos_n, yv_votos
                 )

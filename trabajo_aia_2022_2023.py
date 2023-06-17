@@ -864,7 +864,8 @@ def clasifBin_votos():
                     mejores_parametros_votos = params
 
     # Aplicamos el método entrena de RegresionLogisticaMiniBatch con los mejores parámetros obtenidos
-    lr_votos.entrena(Xe_votos_n, ye_votos, Xv_votos_n, yv_votos, salida_epoch=True, early_stopping=True, **mejores_parametros_votos)
+    lr_votos = RegresionLogisticaMiniBatch(**mejores_parametros_votos)
+    lr_votos.entrena(Xe_cancer_n, ye_cancer)
 
     # Evaluamos el conjunto de prueba
     rendimiento_prueba_votos = rendimiento(Xe_votos_n, ye_votos)
@@ -907,20 +908,21 @@ def clasifBin_cancer():
                     'rate_decay': rate_decay,
                     'batch_tam': batch_tam
                 }
-                rendimiento = rendimiento_validacion_cruzada(
+                rendVC = rendimiento_validacion_cruzada(
                     RegresionLogisticaMiniBatch, params, Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer
                 )
-                print(f"Parámetros: {params}, Rendimiento medio: {rendimiento}")
+                print(f"Parámetros: {params}, Rendimiento medio: {rendVC}")
 
-                if rendimiento > mejor_rendimiento_cancer:
-                    mejor_rendimiento_cancer = rendimiento
+                if rendVC > mejor_rendimiento_cancer:
+                    mejor_rendimiento_cancer = rendVC
                     mejores_parametros_cancer = params
 
     # Aplicamos el método entrena de RegresionLogisticaMiniBatch con los mejores parámetros obtenidos
-    lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True, **mejores_parametros_cancer)
+    lr_cancer = RegresionLogisticaMiniBatch(**mejores_parametros_cancer)
+    lr_cancer.entrena(Xe_cancer_n, ye_cancer)
 
     # Evaluamos el conjunto de prueba
-    rendimiento_prueba_cancer = np.mean(lr_cancer.clasifica(Xe_cancer_n) == ye_cancer)
+    rendimiento_prueba_cancer = rendimiento(lr_cancer, Xe_cancer_n, ye_cancer)
     print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_cancer}")
 
 # Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(cd.X_cancer,cd.y_cancer,test=0.2)
@@ -932,7 +934,7 @@ def clasifBin_cancer():
 # Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 # Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
 
-clasifBin_cancer()
+# clasifBin_cancer()
 
 
 
@@ -1016,6 +1018,7 @@ class RL_OvR():
         for c in self.classes:
             y_binary = np.where(y == c, 1, 0)
             classifier = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
+            
             # Entrenamos el clasificador para la predección de clases
             classifier.entrena(X, y_binary, n_epochs=n_epochs, salida_epoch=salida_epoch)
             self.classifiers[c] = classifier
@@ -1038,8 +1041,8 @@ class RL_OvR():
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
-# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
-# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 # --------------------------------
 
