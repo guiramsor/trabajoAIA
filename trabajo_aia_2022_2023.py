@@ -596,6 +596,8 @@ class RegresionLogisticaMiniBatch():
 
         #Obtenemos el conjunto clases únicas e inicializamos los pesos de manera aleatoria.
         self.clases = np.unique(y)
+        dicc_clases = {nombre_clase: i for i, nombre_clase in enumerate(self.clases)}
+        # print(self.clases)
         self.pesos = np.random.rand(X.shape[1])
 
         if Xv is None:
@@ -620,10 +622,14 @@ class RegresionLogisticaMiniBatch():
             for i in range(0, len(X), self.batch_tam):
                 indices_batch = indices[i:(i+self.batch_tam)] # Indices del batch seleccionado
                 X_batch = X[indices_batch] # Datos de X que hacen referencia a esos indices
-                y_batch = y[indices_batch]
+                # y_batch = y[indices_batch]
+
+                y_batch = np.array([dicc_clases[nombre_clase] for nombre_clase in y[indices_batch]])
 
                 y_pred = self.sigmoide(np.dot(X_batch, self.pesos))
-                gradiente = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
+                # gradiente = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
+                gradiente = np.dot(X_batch.T, y_pred - y_batch.astype(float)) / len(X_batch)
+                
                 # gradiente = np.dot(X_batch.T, y_pred - y_batch)
                 self.pesos -= rate_n * gradiente
 
@@ -828,22 +834,22 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 # rendimiento durante un entrenamiento.     
 
 # ----------------------------
+
 def clasifBin_votos():
     lr_votos = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
     # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_votos
-    # según el rendimiento asociado a la combinatoria de parámetros que estemos 
-    # evaluando (ahora declararemos los valores de params)
-    mejor_rendimiento_votos = 0
-    mejor_rendimiento_votos = {}
-
-    # Asociamos los posibles valores para rate, rate_decay y batch_tam
+    # y mejor_rendimiento_votos según el rendimiento asociado a la combinatoria de
+    # parámetros que estemos evaluando (ahora declararemos los valores de params)
     params_votos = {
         'rate': [0.1, 0.01, 0.001],
         'rate_decay': [True, False],
-        'batch_tam': [32, 64, 128]
+        'batch_tam': [16, 32, 64]
     }
-    
+
+    mejor_rendimiento_votos = 0
+    mejores_parametros_votos = {}
+
     # Realizamos una búsqueda de los mejores parámetros de forma clásica
     # mediante bucles for y actualizando los mejores valores
     for rate in params_votos['rate']:
@@ -854,21 +860,21 @@ def clasifBin_votos():
                     'rate_decay': rate_decay,
                     'batch_tam': batch_tam
                 }
-                rendimiento = rendimiento_validacion_cruzada(
+                rendVC = rendimiento_validacion_cruzada(
                     RegresionLogisticaMiniBatch, params, Xe_votos_n, ye_votos, Xv_votos_n, yv_votos
                 )
-                print(f"Parámetros: {params}, Rendimiento medio: {rendimiento}")
+                print(f"Parámetros: {params}, Rendimiento medio: {rendVC}")
 
-                if rendimiento > mejor_rendimiento_votos:
-                    mejor_rendimiento_votos = rendimiento
+                if rendVC > mejor_rendimiento_votos:
+                    mejor_rendimiento_votos = rendVC
                     mejores_parametros_votos = params
 
     # Aplicamos el método entrena de RegresionLogisticaMiniBatch con los mejores parámetros obtenidos
     lr_votos = RegresionLogisticaMiniBatch(**mejores_parametros_votos)
-    lr_votos.entrena(Xe_cancer_n, ye_cancer)
+    lr_votos.entrena(Xe_votos_n, ye_votos)
 
     # Evaluamos el conjunto de prueba
-    rendimiento_prueba_votos = rendimiento(Xe_votos_n, ye_votos)
+    rendimiento_prueba_votos = rendimiento(lr_votos, Xe_votos_n, ye_votos)
     print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_votos}")
 
 Xev_votos,Xp_votos,yev_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
@@ -876,7 +882,6 @@ Xe_votos,Xv_votos,ye_votos,yv_votos=particion_entr_prueba(Xev_votos,yev_votos,te
 
 normst_votos = NormalizadorStandard()
 normst_votos.ajusta(Xe_votos)
-
 Xe_votos_n = normst_votos.normaliza(Xe_votos)
 Xv_votos_n = normst_votos.normaliza(Xv_votos)
 Xp_votos_n = normst_votos.normaliza(Xp_votos)
@@ -1018,7 +1023,7 @@ class RL_OvR():
         for c in self.classes:
             y_binary = np.where(y == c, 1, 0)
             classifier = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
-            
+
             # Entrenamos el clasificador para la predección de clases
             classifier.entrena(X, y_binary, n_epochs=n_epochs, salida_epoch=salida_epoch)
             self.classifiers[c] = classifier
@@ -1110,25 +1115,26 @@ print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 
 def codifica_one_hot(X):
-
-    # Aplanamos los atributos y obtenemos los valores únicos
-    # con el método unique de numpy
-    val_unicos = np.unique(X.flatten()) 
-    nValores = len(val_unicos)
-    nMuestras, nCaract = X.shape
-
-    # Creamos el array codificado
-    X_codif = np.zeros((nMuestras, nCaract * nValores))
-
-    for i in range(nMuestras):
-        for j in range(nCaract):
-            valor = X[i, j]
-            #Obtenemos el índice del valor en val_unicos
-            indice = np.where(val_unicos == valor)[0][0]  
-            #Asignamos 1 para la posición correspondiente de del array
-            X_codif[i, j * nValores + indice] = 1  
-
-    return X_codif
+    # En primer lugar, obtenemos el nº de columnas del conjunto X
+    num_columnas = X.shape[1]
+    
+    # Creamos un array para almacenar los atributos codificados
+    atributos_codificados = []
+    
+    for columna in range(num_columnas):
+        # Obtenemos los valores únicos de la columna actual
+        # haciendo uso del método unique de numpy
+        valores_unicos = np.unique(X[:, columna])
+        
+        # Codificamos el atrib utilizando indices booleanos
+        # y los añadimos al array anteriormente inicializado vacío
+        codificado = (X[:, columna, None] == valores_unicos).astype(float)
+        atributos_codificados.append(codificado)
+    
+    # Finalmente, aplanamos los atributos codificados (por filas) en un único array
+    X_codificado = np.concatenate(atributos_codificados, axis=1)
+    
+    return X_codificado
 
 
 Xc=np.array([["a",1,"c","x"],
@@ -1138,7 +1144,7 @@ Xc=np.array([["a",1,"c","x"],
              ["c",1,"e","y"],
              ["c",2,"f","y"]])
 
-# print(codifica_one_hot(Xc))
+print(codifica_one_hot(Xc))
 
 # -------- 
 
