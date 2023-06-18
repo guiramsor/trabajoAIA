@@ -1096,10 +1096,10 @@ class RL_OvR():
 
 
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
-rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
+rl_iris_ovr = RL_OvR(rate=0.01, batch_tam=10)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
-print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
-print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 # --------------------------------
 
@@ -1152,12 +1152,12 @@ print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
    
 # >>> codifica_one_hot(Xc)
 # 
-# array([[1., 0., 0., 1., 0., 1., 0., 0., 0., 1., 0., 0.],
-#        [0., 1., 0., 0., 1., 1., 0., 0., 0., 0., 1., 0.],
-#        [0., 0., 1., 1., 0., 0., 1., 0., 0., 1., 0., 0.],
-#        [1., 0., 0., 0., 1., 0., 1., 0., 0., 0., 0., 1.],
-#        [0., 0., 1., 1., 0., 0., 0., 1., 0., 0., 1., 0.],
-#        [0., 0., 1., 0., 1., 0., 0., 0., 1., 0., 1., 0.]])
+# array([[1., 0., 0.,   1., 0.,   1., 0., 0., 0.,   1., 0., 0.],
+#        [0., 1., 0.,   0., 1.,   1., 0., 0., 0.,   0., 1., 0.],
+#        [0., 0., 1.,   1., 0.,   0., 1., 0., 0.,   1., 0., 0.],
+#        [1., 0., 0.,   0., 1.,   0., 1., 0., 0.,   0., 0., 1.],
+#        [0., 0., 1.,   1., 0.,   0., 0., 1., 0.,   0., 1., 0.],
+#        [0., 0., 1.,   0., 1.,   0., 0., 0., 1.,   0., 1., 0.]])
 
 # En este ejemplo, cada columna del conjuto de datos original se transforma en:
 #   * Columna 0 ---> Columnas 0,1,2
@@ -1187,7 +1187,6 @@ def codifica_one_hot(X):
     X_codificado = np.concatenate(atributos_codificados, axis=1)
     
     return X_codificado
-
 
 Xc=np.array([["a",1,"c","x"],
              ["b",2,"c","y"],
@@ -1219,30 +1218,77 @@ Xc=np.array([["a",1,"c","x"],
 
 # ----------------------
 
-# Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
+def clas_mult(rate, rate_decay, batch_tam, imprimir):
+    # Crear una instancia del clasificador OvR y entrenarlo
+    rl_credito_ovr = RL_OvR(rate=rate, rate_decay=rate_decay, batch_tam=batch_tam)
+    rl_credito_ovr.entrena(Xe_credito, ye_credito)
 
-# # Codificar los datos de entrada utilizando one-hot encoding
-# X_credito_codificado = codifica_one_hot(cd.X_credito)
+    # Realizar predicciones en el conjunto de entrenamiento y prueba
+    prediccion_entrenamiento = rl_credito_ovr.clasifica(Xe_credito)
+    prediccion_prueba = rl_credito_ovr.clasifica(Xp_credito)
 
-# # Crear y entrenar el clasificador OvR
-# rl_credito_ovr = RL_OvR(rate=0.001, batch_tam=8)
-# rl_credito_ovr.entrena(X_credito_codificado, cd.y_credito)
+    ls_pred = []
+    for i in range(len(prediccion_entrenamiento)):
+        if prediccion_entrenamiento[i] == 0:
+            ls_pred.append('estudiar')
+        elif prediccion_entrenamiento[i] == 1:
+            ls_pred.append('no conceder')
+        else:
+            ls_pred.append('conceder')
+    for i in range(len(prediccion_prueba)):
+        if prediccion_entrenamiento[i] == 0:
+            ls_pred.append('estudiar')
+        elif prediccion_entrenamiento[i] == 1:
+            ls_pred.append('no conceder')
+        else:
+            ls_pred.append('conceder')
 
-# # Ejemplo de clasificación
-# ejemplo = np.array([['laboral', 'dos o más', 'ninguna', 'ninguno', 'soltero', 'altos']])
+    if imprimir:
+        for ejemplo, prediccion in zip(cd.X_credito, ls_pred):
+            print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
 
-# # Codificar los datos de prueba utilizando one-hot encoding
-# ejemplo_codificado = codifica_one_hot(ejemplo)
+    contador_aciertos = 0
+    for i in range(len(cd.y_credito)):
+        if ls_pred[i] == cd.y_credito[i]: 
+            contador_aciertos += 1
+    rend = (contador_aciertos/len(cd.y_credito))*100
 
-# # Realizar la clasificación
-# clase_predicha = rl_credito_ovr.clasifica(ejemplo_codificado)
-# print("Clase predicha:", clase_predicha)
-
-# # Imprimir los resultados
-# for ejemplo, prediccion in zip(ejemplo, clase_predicha):
-#     print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
+    return [rate, rate_decay, batch_tam, rend]
 
 
+
+# Codificar los atributos en formato one-hot
+X_codificado = codifica_one_hot(cd.X_credito)
+
+# Dividir el conjunto de datos en entrenamiento y prueba
+Xe_credito, Xp_credito, ye_credito, yp_credito = particion_entr_prueba(X_codificado, cd.y_credito)
+
+import itertools
+# Params
+valores_rate = [0.1, 0.01, 0.001]
+valores_rate_decay = [True, False]
+valores_batch_tam = [16, 32, 64, 128]
+
+# Realizar la combinación de elementos sin repetir de la misma lista
+combinaciones = list(itertools.product(valores_rate, valores_rate_decay, valores_batch_tam))
+
+# Para cada combinacion de params
+# for combinacion in combinaciones:
+#     ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
+# clas_mult(ls_comb[0], ls_comb[1], ls_comb[2], True)
+
+# Para cada combinacion de params
+rendMax = 0
+ls_param = [0, True, 0]
+for combinacion in combinaciones:
+    ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
+    if rendMax < ls_comb[3]:
+        rendMax = ls_comb[3]
+        ls_param[0] = ls_comb[0]
+        ls_param[1] = ls_comb[1]
+        ls_param[2] = ls_comb[2]
+# clas_mult(ls_param[0], ls_param[1], ls_param[2], True)
+# print("Rendimiento alcanzado", rendMax)
 
 
 # ---------------------------------------------------------
@@ -1276,71 +1322,83 @@ Xc=np.array([["a",1,"c","x"],
 
 
 # --------------------------------------------------------------------------
-# import os
-# import numpy as np
-# import zipfile
+import os
+import numpy as np
+import zipfile
 
-# def leer_datos():
-#     if not os.path.exists("datos/digits"):
-#         with zipfile.ZipFile("datos/digitdata.zip", "r") as zip_ref:
-#             zip_ref.extractall("datos/digits")
+def leer_datos():
+    if not os.path.exists("datos/digits"):
+        with zipfile.ZipFile("datos/digitdata.zip", "r") as zip_ref:
+            zip_ref.extractall("datos/digits")
 
-#     with open("datos/digits/trainingimages", "r") as f:
-#         lines = f.readlines()
-#         #print(lines[:10])  # Imprimir las primeras 10 líneas de los datos de entrenamiento
+    with open("datos/digits/trainingimages", "r") as f:
+        lines = f.readlines()
+        # print(lines[:10])  # Imprimir las primeras 10 líneas de los datos de entrenamiento
 
-#     X_train = np.loadtxt("datos/digits/trainingimages", delimiter=" ", dtype=str, usecols=range(29*29))
-#     X_train[X_train == ''] = '0'
-#     X_train = X_train.astype(int)
-#     y_train = np.loadtxt("datos/digits/traininglabels", dtype=int)
-#     X_test = np.loadtxt("datos/digits/testimages", delimiter=" ", dtype=int, usecols=range(29*29))
-#     X_test[X_test == ''] = '0'
-#     X_test = X_test.astype(int)
-#     y_test = np.loadtxt("datos/digits/testlabels", dtype=int)
+        num_examples = len(lines) // 28
+        train_data = np.zeros((num_examples, 28, 28))
 
-#     # Procesar imágenes
-#     X_train = procesar_imagenes(X_train)
-#     X_test = procesar_imagenes(X_test)
+        for i in range(num_examples):
+            for j in range(28):
+                line = lines[i*28 + j]
+                for k in range(28):
+                    if line[k] == ' ':
+                        train_data[i, j, k] = 0
+                    else:
+                        train_data[i, j, k] = 1
 
-#     return X_train, X_test, y_train, y_test
+        print("Dimensiones de los datos de entrenamiento:", train_data.shape)
 
+        with open("datos/digits/traininglabels", "r") as f_labels:
+            train_labels = f_labels.read().splitlines()
+            train_labels = np.array(train_labels, dtype=int)
 
-# def procesar_imagenes(X):
-#     X_processed = np.zeros((len(X), 28, 28), dtype=int)
-#     for i, image in enumerate(X):
-#         for j, row in enumerate(image):
-#             X_processed[i, j] = [0 if c in [" "] else 1 for c in row]
-#             # X_processed[i, j] = [0 if c in [" ", "+"] else 1 for c in row]
-#     return X_processed
+        print("Dimensiones de las etiquetas de entrenamiento:", train_labels.shape)
 
+    with open("datos/digits/testimages", "r") as f:
+        lines = f.readlines()
 
-# def particion_entr_prueba(X, y):
-#     indices = np.arange(len(X))
-#     np.random.shuffle(indices)
-#     train_indices = indices[:int(0.8 * len(X))]
-#     test_indices = indices[int(0.8 * len(X)):]
+        num_examples = len(lines) // 28
+        test_data = np.zeros((num_examples, 28, 28))
 
-#     X_train = X[train_indices]
-#     y_train = y[train_indices]
-#     X_test = X[test_indices]
-#     y_test = y[test_indices]
+        for i in range(num_examples):
+            for j in range(28):
+                line = lines[i*28 + j]
+                for k in range(28):
+                    if line[k] == ' ':
+                        test_data[i, j, k] = 0
+                    else:
+                        test_data[i, j, k] = 1
 
-#     return X_train, X_test, y_train, y_test
+        print("Dimensiones de los datos de prueba:", test_data.shape)
 
+        with open("datos/digits/testlabels", "r") as f_labels:
+            test_labels = f_labels.read().splitlines()
+            test_labels = np.array(test_labels, dtype=int)
 
-# X_train, X_test, y_train, y_test = leer_datos()
+        print("Dimensiones de las etiquetas de prueba:", test_labels.shape)
 
-# X_train, X_val, y_train, y_val = particion_entr_prueba(X_train, y_train)
+    return train_data, train_labels, test_data, test_labels
 
-# rl_ovr = RL_OvR(rate=0.001, batch_tam=8)
-# rl_ovr.entrena(X_train, y_train, n_epochs=100, salida_epoch=True)
+# Llamada a la función para leer los datos
+datos_entrenamiento, etiquetas_entrenamiento, datos_prueba, etiquetas_prueba = leer_datos()
+print(datos_entrenamiento[0])
+print(etiquetas_entrenamiento[0])
+print(datos_prueba[0])
+print(etiquetas_prueba[0])
 
-# # Clasificar los ejemplos de prueba
-# y_pred = rl_ovr.clasifica(X_test)
+# # Crea una instancia del clasificador RL_OvR
+# clasificador = RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
 
-# # Evaluar el rendimiento
-# accuracy = np.mean(y_pred == y_test)
-# print("Rendimiento en prueba:", accuracy)
+# # Entrena el clasificador con los datos y etiquetas
+# clasificador.entrena(datos_entrenamiento, etiquetas_entrenamiento, n_epochs=100, salida_epoch=False)
+
+# # Utiliza el clasificador para predecir las etiquetas de las imágenes de prueba
+# etiquetas_predichas = clasificador.clasifica(datos_prueba)
+
+# # Etiquetas predichas para las imágenes de prueba
+# print(etiquetas_predichas)
+
 
 
 # =========================================================================
