@@ -838,8 +838,8 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
 def clasifBin_votos():
     lr_votos = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
-    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_votos
-    # y mejor_rendimiento_votos según el rendimiento asociado a la combinatoria de
+    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_cancer
+    # y mejor_rendimiento_cancer según el rendimiento asociado a la combinatoria de
     # parámetros que estemos evaluando (ahora declararemos los valores de params)
     params_votos = {
         'rate': [0.1, 0.01, 0.001],
@@ -884,15 +884,16 @@ normst_votos = NormalizadorStandard()
 normst_votos.ajusta(Xe_votos)
 Xe_votos_n = normst_votos.normaliza(Xe_votos)
 Xv_votos_n = normst_votos.normaliza(Xv_votos)
-Xp_votos_n = normst_votos.normaliza(Xp_votos)
 
+#############################################################
 # clasifBin_votos()
+#############################################################
 
 def clasifBin_cancer():
     lr_cancer = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
-    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_votos
-    # y mejor_rendimiento_votos según el rendimiento asociado a la combinatoria de
+    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_cancer
+    # y mejor_rendimiento_cancer según el rendimiento asociado a la combinatoria de
     # parámetros que estemos evaluando (ahora declararemos los valores de params)
     params_cancer = {
         'rate': [0.1, 0.01, 0.001],
@@ -930,19 +931,70 @@ def clasifBin_cancer():
     rendimiento_prueba_cancer = rendimiento(lr_cancer, Xe_cancer_n, ye_cancer)
     print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_cancer}")
 
-# Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(cd.X_cancer,cd.y_cancer,test=0.2)
-# Xe_cancer,Xv_cancer,ye_cancer,yv_cancer=particion_entr_prueba(Xev_cancer,yev_cancer,test=0.2)
+Xev_cancer,Xp_cancer,yev_cancer,yp_cancer=particion_entr_prueba(cd.X_cancer,cd.y_cancer,test=0.2)
+Xe_cancer,Xv_cancer,ye_cancer,yv_cancer=particion_entr_prueba(Xev_cancer,yev_cancer,test=0.2)
 
-# normst_cancer = NormalizadorStandard()
-# normst_cancer.ajusta(Xe_cancer)
-# Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
-# Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
-# Xp_cancer_n = normst_cancer.normaliza(Xp_cancer)
+normst_cancer = NormalizadorStandard()
+normst_cancer.ajusta(Xe_cancer)
+Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
+Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 
+#############################################################
 # clasifBin_cancer()
+#############################################################
 
+def clasifBin_imdb():
+    lr_imdb = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
+    # Para ajustar los parámetros, vamos a ir actualizando mejor_rendimiento_cancer
+    # y mejor_rendimiento_cancer según el rendimiento asociado a la combinatoria de
+    # parámetros que estemos evaluando (ahora declararemos los valores de params)
+    params_imdb = {
+        'rate': [0.1, 0.01, 0.001],
+        'rate_decay': [True, False],
+        'batch_tam': [16, 32, 64]
+    }
 
+    mejor_rendimiento_imdb = 0
+    mejores_parametros_imdb = {}
+
+    # Realizamos una búsqueda de los mejores parámetros de forma clásica
+    # mediante bucles for y actualizando los mejores valores
+    for rate in params_imdb['rate']:
+        for rate_decay in params_imdb['rate_decay']:
+            for batch_tam in params_imdb['batch_tam']:
+                params = {
+                    'rate': rate,
+                    'rate_decay': rate_decay,
+                    'batch_tam': batch_tam
+                }
+                rendVC = rendimiento_validacion_cruzada(
+                    RegresionLogisticaMiniBatch, params, Xe_imdb_n, ye_imdb, Xv_imdb_n, yv_imdb
+                )
+                print(f"Parámetros: {params}, Rendimiento medio: {rendVC}")
+
+                if rendVC > mejor_rendimiento_imdb:
+                    mejor_rendimiento_imdb = rendVC
+                    mejores_parametros_imdb = params
+
+    # Aplicamos el método entrena de RegresionLogisticaMiniBatch con los mejores parámetros obtenidos
+    lr_imdb = RegresionLogisticaMiniBatch(**mejores_parametros_imdb)
+    lr_imdb.entrena(Xe_imdb_n, ye_imdb)
+
+    # Evaluamos el conjunto de prueba
+    rendimiento_prueba_imdb = rendimiento(lr_imdb, Xe_imdb_n, ye_imdb)
+    print(f"Rendimiento en conjunto de prueba: {rendimiento_prueba_imdb}")
+
+Xe_imdb,Xv_imdb,ye_imdb,yv_imdb=particion_entr_prueba(cd.X_train_imdb,cd.y_train_imdb,test=0.2)
+
+normst_imdb = NormalizadorStandard()
+normst_imdb.ajusta(Xe_imdb)
+Xe_imdb_n = normst_imdb.normaliza(Xe_imdb)
+Xv_imdb_n = normst_imdb.normaliza(Xv_imdb)
+
+#############################################################
+# clasifBin_imdb()
+#############################################################
 
 # =====================================================
 # EJERCICIO 6: CLASIFICACIÓN MULTICLASE CON ONE vs REST
@@ -1046,8 +1098,8 @@ class RL_OvR():
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
-# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
-# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 # --------------------------------
 
@@ -1167,34 +1219,34 @@ Xc=np.array([["a",1,"c","x"],
 
 # ----------------------
 
-Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
+# Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,cd.y_credito,test=0.4)
 
-# Codificar los datos de entrada utilizando one-hot encoding
-X_credito_codificado = codifica_one_hot(cd.X_credito)
+# # Codificar los datos de entrada utilizando one-hot encoding
+# X_credito_codificado = codifica_one_hot(cd.X_credito)
 
-# Crear y entrenar el clasificador OvR
-rl_credito_ovr = RL_OvR(rate=0.001, batch_tam=8)
-rl_credito_ovr.entrena(X_credito_codificado, cd.y_credito)
+# # Crear y entrenar el clasificador OvR
+# rl_credito_ovr = RL_OvR(rate=0.001, batch_tam=8)
+# rl_credito_ovr.entrena(X_credito_codificado, cd.y_credito)
 
-# Ejemplo de clasificación
-ejemplo = np.array([['laboral', 'dos o más', 'ninguna', 'ninguno', 'soltero', 'altos']])
+# # Ejemplo de clasificación
+# ejemplo = np.array([['laboral', 'dos o más', 'ninguna', 'ninguno', 'soltero', 'altos']])
 
-# Codificar los datos de prueba utilizando one-hot encoding
-ejemplo_codificado = codifica_one_hot(ejemplo)
+# # Codificar los datos de prueba utilizando one-hot encoding
+# ejemplo_codificado = codifica_one_hot(ejemplo)
 
-# Realizar la clasificación
-clase_predicha = rl_credito_ovr.clasifica(ejemplo_codificado)
-print("Clase predicha:", clase_predicha)
+# # Realizar la clasificación
+# clase_predicha = rl_credito_ovr.clasifica(ejemplo_codificado)
+# print("Clase predicha:", clase_predicha)
 
-# Imprimir los resultados
-for ejemplo, prediccion in zip(ejemplo, clase_predicha):
-    print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
+# # Imprimir los resultados
+# for ejemplo, prediccion in zip(ejemplo, clase_predicha):
+#     print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
 
 
 
 
 # ---------------------------------------------------------
-# 7.2) Clasificación de imágenes de dígitos escritos a mano
+# 8.2) Clasificación de imágenes de dígitos escritos a mano
 # ---------------------------------------------------------
 
 
@@ -1291,24 +1343,6 @@ for ejemplo, prediccion in zip(ejemplo, clase_predicha):
 # print("Rendimiento en prueba:", accuracy)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # =========================================================================
 # EJERCICIO OPCIONAL PARA SUBIR NOTA: 
 #    CLASIFICACIÓN MULTICLASE CON REGRESIÓN LOGÍSTICA MULTINOMIAL
@@ -1374,9 +1408,150 @@ for ejemplo, prediccion in zip(ejemplo, clase_predicha):
 
 # --------------- 
 
+import numpy as np
+from scipy.special import softmax
+
+class RL_Multinomial():
+    def __init__(self, rate=0.1, rate_decay=False, batch_tam=64):
+        self.rate = rate
+        self.rate_decay = rate_decay
+        self.batch_tam = batch_tam
+        self.weights = None
+
+    def _one_hot_encode(self, y):
+        n_samples = len(y)
+        n_classes = np.max(y) + 1
+        one_hot = np.zeros((n_samples, n_classes))
+        one_hot[np.arange(n_samples), y] = 1
+        return one_hot
+
+    def _softmax(self, X):
+        return softmax(X, axis=1)
+
+    def _initialize_weights(self, n_features, n_classes):
+        limit = 1 / np.sqrt(n_features)
+        self.weights = np.random.uniform(-limit, limit, (n_features, n_classes))
+
+    def _batch_generator(self, X, y):
+        n_samples = X.shape[0]
+        indices = np.arange(n_samples)
+        np.random.shuffle(indices)
+        for start in range(0, n_samples, self.batch_tam):
+            end = min(start + self.batch_tam, n_samples)
+            batch_idx = indices[start:end]
+            yield X[batch_idx], y[batch_idx]
+
+    def entrena(self, X, y, n_epochs=100, salida_epoch=False):
+        n_features = X.shape[1]
+        n_classes = np.max(y) + 1
+        y_encoded = self._one_hot_encode(y)
+        self._initialize_weights(n_features, n_classes)
+
+        for epoch in range(n_epochs):
+            if self.rate_decay:
+                self.rate /= (1 + epoch)
+
+            for batch_X, batch_y in self._batch_generator(X, y_encoded):
+                y_pred = self._softmax(batch_X.dot(self.weights))
+                error = y_pred - batch_y
+                gradient = batch_X.T.dot(error)
+                self.weights -= self.rate * gradient
+
+            if salida_epoch:
+                y_pred = self.clasifica_prob(X)
+                loss = self._cross_entropy_loss(y_encoded, y_pred)
+                accuracy = self._accuracy(y, np.argmax(y_pred, axis=1))
+                print(f"Epoch {epoch + 1}/{n_epochs} - Loss: {loss:.4f} - Accuracy: {accuracy:.4f}")
+
+    def clasifica_prob(self, ejemplos):
+        return self._softmax(ejemplos.dot(self.weights))
+
+    def clasifica(self, ejemplos):
+        prob = self.clasifica_prob(ejemplos)
+        return np.argmax(prob, axis=1)
+
+    def _cross_entropy_loss(self, y_true, y_pred):
+        epsilon = 1e-10
+        y_pred = np.clip(y_pred, epsilon, 1 - epsilon)
+        loss = -np.sum(y_true * np.log(y_pred)) / len(y_true)
+        return loss
+
+    def _accuracy(self, y_true, y_pred):
+        return np.mean(y_true == y_pred)
 
 
 
+rl_iris_m=RL_Multinomial(rate=0.001,batch_tam=8)
+rl_iris_m.entrena(Xe_iris,ye_iris,n_epochs=50)
+
+# print(rendimiento(rl_iris_m,Xe_iris,ye_iris))
+# print(rendimiento(rl_iris_m,Xp_iris,yp_iris))
+
+
+
+
+# import numpy as np
+# from scipy.special import softmax
+
+# class RL_Multinomial():
+#     def __init__(self, rate=0.1, rate_decay=False, batch_tam=64):
+#         self.rate = rate
+#         self.rate_decay = rate_decay
+#         self.batch_tam = batch_tam
+#         self.weights = None
+
+#     def entrena(self, X, y, n_epochs=100, salida_epoch=False):
+#         # Codificar las etiquetas en una representación one-hot
+#         n_clases = len(np.unique(y))
+#         y_onehot = np.eye(n_clases)[y]
+
+#         # Inicializar los pesos aleatoriamente
+#         n_atributos = X.shape[1]
+#         self.weights = np.random.randn(n_atributos, n_clases)
+
+#         # Entrenamiento en minibatch
+#         n_ejemplos = X.shape[0]
+#         for epoch in range(n_epochs):
+#             # Barajar los datos
+#             indices = np.random.permutation(n_ejemplos)
+#             X = X[indices]
+#             y_onehot = y_onehot[indices]
+
+#             # Dividir los datos en minibatches
+#             n_batches = n_ejemplos // self.batch_tam
+#             for batch in range(n_batches):
+#                 start = batch * self.batch_tam
+#                 end = start + self.batch_tam
+#                 X_batch = X[start:end]
+#                 y_batch = y_onehot[start:end]
+
+#                 # Calcular la función de activación softmax
+#                 scores = np.dot(X_batch, self.weights)
+#                 probs = softmax(scores, axis=1)
+
+#                 # Calcular el gradiente y actualizar los pesos
+#                 error = probs - y_batch
+#                 gradient = np.dot(X_batch.T, error) / self.batch_tam
+#                 self.weights -= self.rate * gradient
+
+#             # Decaimiento de la tasa de aprendizaje
+#             if self.rate_decay:
+#                 self.rate /= (epoch + 1)
+
+#             # Imprimir la precisión en cada epoch si se solicita
+#             if salida_epoch:
+#                 acc = self.rendimiento(X, y)
+#                 print(f"Epoch {epoch + 1}/{n_epochs} - Precisión: {acc}")
+
+#     def clasifica_prob(self, ejemplos):
+#         scores = np.dot(ejemplos, self.weights)
+#         probs = softmax(scores, axis=1)
+#         return probs
+
+#     def clasifica(self, ejemplos):
+#         probs = self.clasifica_prob(ejemplos)
+#         clases = np.argmax(probs, axis=1)
+#         return clases
 
 
 
