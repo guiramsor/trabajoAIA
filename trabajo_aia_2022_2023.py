@@ -50,6 +50,12 @@
 #   saldrán mucho más cortas y eficientes, y se puntuarÁn mejor.   
 
 import numpy as np
+import carga_datos as cd
+from scipy.special import expit
+import itertools
+import os
+import zipfile
+from scipy.special import softmax
 
 # *****************************************
 # CONJUNTOS DE DATOS A USAR EN ESTE TRABAJO
@@ -184,8 +190,6 @@ import numpy as np
 #  array([81, 91, 88]))
 # ------------------------------------------------------------------
 
-import carga_datos as cd
-import numpy as np
 
 def particion_entr_prueba(X, y, test=0.20):
     
@@ -590,9 +594,6 @@ def rendimiento(clasif,X,y):
 
 # -----------------------------------------------------------------
 
-import numpy as np
-from scipy.special import expit
-
 class ClasificadorNoEntrenado(Exception):
     pass
 
@@ -788,8 +789,6 @@ lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
 
 #------------------------------------------------------------------------------
 
-
-import numpy as np
 
 def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv=None, n=5):
     if Xv is None or yv is None:
@@ -1086,8 +1085,6 @@ Xv_imdb_n = normst_imdb.normaliza(Xv_imdb)
 # >>> 0.9
 # --------------------------------------------------------------------
 
-import numpy as np
-from scipy.special import expit
 
 class ClasificadorNoEntrenado(Exception):
     pass
@@ -1125,15 +1122,14 @@ class RL_OvR():
 
         # Devolvemos la clase con mayor probabilidad
         y_pred = np.array(y_pred)
-        y_class = np.argmax(y_pred, axis=0)
-        return self.clases[y_class]
+        y_clase = np.argmax(y_pred, axis=0)
+        return self.clases[y_clase]
 
 
 # -- TEST EJ 6 --
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
-rl_iris_ovr.entrena(Xe_iris, ye_iris)
-
+# rl_iris_ovr.entrena(Xe_iris, ye_iris)
 # print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
 # print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
@@ -1286,7 +1282,6 @@ def clasif_mult(rate, rate_decay, batch_tam, imprimir):
 # Dividir el conjunto de datos en entrenamiento y prueba
 Xe_credito, Xp_credito, ye_credito, yp_credito = particion_entr_prueba(cd.X_credito, cd.y_credito)
 
-import itertools
 # Params
 valores_rate = [0.1, 0.01, 0.001]
 valores_rate_decay = [True, False]
@@ -1295,21 +1290,19 @@ valores_batch_tam = [16, 32, 64, 128]
 # Creamos una lista de combinaciones de parametros haciendo uso del modulo itertools
 combinaciones = list(itertools.product(valores_rate, valores_rate_decay, valores_batch_tam))
 
-# Para cada combinacion de params
-rendMax = 0
-ls_param = [0, True, 0]
-for combinacion in combinaciones:
-    ls_comb = clasif_mult(combinacion[0], combinacion[1], combinacion[2], False)
-    if rendMax < ls_comb[3]:
-        rendMax = ls_comb[3]
-        ls_param[0] = ls_comb[0]
-        ls_param[1] = ls_comb[1]
-        ls_param[2] = ls_comb[2]
-
 # -- TEST EJ 8.1 -- 
-
-clasif_mult(ls_param[0], ls_param[1], ls_param[2], True)
-print("Rendimiento alcanzado", rendMax)
+# Para cada combinacion de params
+# rendMax = 0
+# ls_param = [0, True, 0]
+# for combinacion in combinaciones:
+#     ls_comb = clasif_mult(combinacion[0], combinacion[1], combinacion[2], False)
+#     if rendMax < ls_comb[3]:
+#         rendMax = ls_comb[3]
+#         ls_param[0] = ls_comb[0]
+#         ls_param[1] = ls_comb[1]
+#         ls_param[2] = ls_comb[2]
+# clasif_mult(ls_param[0], ls_param[1], ls_param[2], True)
+# print("Rendimiento alcanzado", rendMax)
 
 
 # ---------------------------------------------------------
@@ -1343,13 +1336,6 @@ print("Rendimiento alcanzado", rendMax)
 
 
 # --------------------------------------------------------------------------
-import os
-import numpy as np
-import zipfile
-
-import os
-import numpy as np
-import zipfile
 
 def leer_datos():
     
@@ -1391,7 +1377,7 @@ def leer_datos():
 # -- TEST EJ 8.2 --
 Xe_digitos,Xp_digitos,ye_digitos,yp_digitos = leer_datos()
 rl_digitos=RL_OvR(rate=0.01, rate_decay=False, batch_tam=64)
-rl_digitos.entrena(Xe_digitos,ye_digitos)
+# rl_digitos.entrena(Xe_digitos,ye_digitos)
 # print("Rendimiento en entrenamiento:", rendimiento(rl_digitos,Xe_digitos,ye_digitos))
 # print("Rendimiento en prueba:", rendimiento(rl_digitos,Xp_digitos,yp_digitos))
 
@@ -1461,86 +1447,49 @@ rl_digitos.entrena(Xe_digitos,ye_digitos)
 
 # --------------- 
 
-import numpy as np
-from scipy.special import softmax
 
 class RL_Multinomial():
-     #Inicializamos el constructor y sus variables necesarias
+    #Inicializamos el constructor con los parámetros
     def __init__(self, rate=0.1, rate_decay=False, batch_tam=64):
         self.rate = rate
         self.rate_decay = rate_decay
         self.batch_tam = batch_tam
-        self.weights = None
-    #Codificamos en one-hot los valores de la clase
-    def _one_hot_encode(self, y):
-        n_samples = len(y)
-        n_classes = np.max(y) + 1
-    #Creamos una Matriz de ceros de n_samples y n_classes y establece en 1 los elementos correspondientes en y.
-        one_hot = np.zeros((n_samples, n_classes))
-        one_hot[np.arange(n_samples), y] = 1
-        return one_hot
-    #Aplicamos función softmax a las filas de X
-    def _softmax(self, X):
-        return softmax(X, axis=1)
-    #Inicializa los pesos del modelo
-    def _initialize_weights(self, n_features, n_classes):
-        #Calculamos el limite
-        limit = 1 / np.sqrt(n_features)
-        #Generamos valores aleatorios dentro de los limites para la matriz de pesos
-        self.weights = np.random.uniform(-limit, limit, (n_features, n_classes))
-    #Creamos lotes de tamaño batch_tam
-    def _batch_generator(self, X, y):
-        n_samples = X.shape[0]
-        indices = np.arange(n_samples)
-        np.random.shuffle(indices)
-        for start in range(0, n_samples, self.batch_tam):
-            end = min(start + self.batch_tam, n_samples)
-            batch_idx = indices[start:end]
-            yield X[batch_idx], y[batch_idx]
+        # Creamos un dicc de clasificadores binarios
+        self.clasificadores = {}
 
     def entrena(self, X, y, n_epochs=100, salida_epoch=False):
-        n_features = X.shape[1]
-        n_classes = np.max(y) + 1
-        y_encoded = self._one_hot_encode(y)
-        self._initialize_weights(n_features, n_classes)
+        # Obtenemos las clases únicas
+        self.clases = np.unique(y)
 
-        for epoch in range(n_epochs):
-            if self.rate_decay:
-                self.rate /= (1 + epoch)
+        # Iteramos dichas clases obtenidas en los datos de entrenamiento
+        # y entrena un clasificador binario para cada una de ellas
+        for c in self.clases:
+            y_bin = np.where(y == c, 1, 0)
+            clasificador = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
 
-            for batch_X, batch_y in self._batch_generator(X, y_encoded):
-                y_pred = self._softmax(batch_X.dot(self.weights))
-                error = y_pred - batch_y
-                gradient = batch_X.T.dot(error)
-                self.weights -= self.rate * gradient
-
-            if salida_epoch:
-                y_pred = self.clasifica_prob(X)
-                loss = self._cross_entropy_loss(y_encoded, y_pred)
-                accuracy = self._accuracy(y, np.argmax(y_pred, axis=1))
-                print(f"Epoch {epoch + 1}/{n_epochs} - Loss: {loss:.4f} - Accuracy: {accuracy:.4f}")
-
-    def clasifica_prob(self, ejemplos):
-        return self._softmax(ejemplos.dot(self.weights))
+            # Entrenamos el clasificador para la predección de clases
+            clasificador.entrena(X, y_bin, n_epochs=n_epochs, salida_epoch=salida_epoch)
+            self.clasificadores[c] = clasificador
 
     def clasifica(self, ejemplos):
-        prob = self.clasifica_prob(ejemplos)
-        return np.argmax(prob, axis=1)
+        if not self.clasificadores:
+            raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
 
-    def _cross_entropy_loss(self, y_true, y_pred):
-        epsilon = 1e-10
-        y_pred = np.clip(y_pred, epsilon, 1 - epsilon)
-        loss = -np.sum(y_true * np.log(y_pred)) / len(y_true)
-        return loss
+        # Asociamos a y_pred la probabilidades de pertenencia
+        y_pred = []
+        for _, clasificador in self.clasificadores.items():
+            y_pred.append(clasificador.clasifica_prob(ejemplos))
 
-    def _accuracy(self, y_true, y_pred):
-        return np.mean(y_true == y_pred)
+        # Devolvemos la clase con mayor probabilidad, aplicando
+        # a diferencia del modelo OvR la función softmax
+        y_pred = np.array(y_pred)
+        y_pred_softmax = softmax(y_pred, axis=0)
+        y_clase = np.argmax(y_pred_softmax, axis=0)
+        return self.clases[y_clase]
 
-
-
-# rl_iris_m=RL_Multinomial(rate=0.001,batch_tam=8)
+# -- TEST EJ OPCIONAL --
+rl_iris_m=RL_Multinomial(rate=0.001,batch_tam=8)
 # rl_iris_m.entrena(Xe_iris,ye_iris,n_epochs=50)
-
 # print(rendimiento(rl_iris_m,Xe_iris,ye_iris))
 # print(rendimiento(rl_iris_m,Xp_iris,yp_iris))
 
