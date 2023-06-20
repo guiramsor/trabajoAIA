@@ -317,6 +317,8 @@ Xp_cancer_n = normStd_cancer.normaliza(Xp_cancer)
 #                 "Xv_cancer_n: ", Xv_cancer_n, "\n",
 #                 "Xp_cancer_n: ", Xp_cancer_n, "\n")
 
+
+
 # Una vez realizado esto, la media y desviación típica de Xe_cancer_n deben ser 
 # 0 y 1, respectivamente. No necesariamente ocurre lo mismo con Xv_cancer_n, 
 # ni con Xp_cancer_n. 
@@ -378,6 +380,9 @@ Xp_cancer_m=normMM_cancer.normaliza(Xp_cancer)
 # print(Xe_cancer_m)
 # print(Xv_cancer_m)
 # print(Xp_cancer_m)
+
+
+
 
 # ===========================================
 # EJERCICIO 3: REGRESIÓN LOGÍSTICA MINI-BATCH
@@ -596,8 +601,10 @@ class RegresionLogisticaMiniBatch():
 
         #Obtenemos el conjunto clases únicas e inicializamos los pesos de manera aleatoria.
         self.clases = np.unique(y)
+        # Creamos un dicc donde las claves son los nombres de las clases y los valores
+        # son los índices correspondientes a cada clase en la lista
         dicc_clases = {nombre_clase: i for i, nombre_clase in enumerate(self.clases)}
-        # print(self.clases)
+        
         self.pesos = np.random.randn(X.shape[1])
 
         if Xv is None:
@@ -607,6 +614,7 @@ class RegresionLogisticaMiniBatch():
         # Declaramos la mejor pérdida a infinito
         # De esta forma, si la pérdida actual es menor, aseguramos que se actualice
         mejor_perdida = float('inf')
+        # Asímismo, contPaciencia llevará el conteo de epochs consecutivos sin mejora en la pérdida.
         contPaciencia = 0
 
         for epoch in range(n_epochs):
@@ -622,13 +630,16 @@ class RegresionLogisticaMiniBatch():
             for i in range(0, len(X), self.batch_tam):
                 indices_batch = indices[i:(i+self.batch_tam)] # Indices del batch seleccionado
                 X_batch = X[indices_batch] # Datos de X que hacen referencia a esos indices
-                # y_batch = y[indices_batch]
 
+                # Recogemos en y_batch los valores para cada clase del dicc
                 y_batch = np.array([dicc_clases[nombre_clase] for nombre_clase in y[indices_batch]])
 
+                # En y_pred tendremos la predicción de clase para el X_batch actual
                 y_pred = self.sigmoide(np.dot(X_batch, self.pesos))
-                # gradiente = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
-                gradiente = np.dot(X_batch.T, y_pred - y_batch.astype(float))
+            
+                # Error de predicción del modelo
+                err_pred = y_pred - y_batch.astype(float)
+                gradiente = np.dot(err_pred, X_batch)
                 
                 # gradiente = np.dot(X_batch.T, y_pred - y_batch)
                 self.pesos -= rate_n * gradiente
@@ -1097,14 +1108,14 @@ class RL_OvR():
         # Devolvemos la clase con mayor probabilidad
         y_pred = np.array(y_pred)
         y_class = np.argmax(y_pred, axis=0)
-        return y_class
+        return self.clases[y_class]
 
 
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
-# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
-# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 # --------------------------------
 
@@ -1226,11 +1237,18 @@ Xc=np.array([["a",1,"c","x"],
 def clas_mult(rate, rate_decay, batch_tam, imprimir):
     # Crear una instancia del clasificador OvR y entrenarlo
     rl_credito_ovr = RL_OvR(rate=rate, rate_decay=rate_decay, batch_tam=batch_tam)
-    rl_credito_ovr.entrena(Xe_credito, ye_credito)
+
+    # Codificar los atributos en formato one-hot
+    Xe_codificado = codifica_one_hot(Xe_credito)
+    Xp_codificado = codifica_one_hot(Xp_credito)
+
+    # Entrenar el modelo
+    rl_credito_ovr.entrena(Xe_codificado, ye_credito)
+
 
     # Realizar predicciones en el conjunto de entrenamiento y prueba
-    prediccion_entrenamiento = rl_credito_ovr.clasifica(Xe_credito)
-    prediccion_prueba = rl_credito_ovr.clasifica(Xp_credito)
+    prediccion_entrenamiento = rl_credito_ovr.clasifica(Xe_codificado)
+    prediccion_prueba = rl_credito_ovr.clasifica(Xp_codificado)
 
     ls_pred = []
     for i in range(len(prediccion_entrenamiento)):
@@ -1240,10 +1258,11 @@ def clas_mult(rate, rate_decay, batch_tam, imprimir):
             ls_pred.append('no conceder')
         else:
             ls_pred.append('conceder')
+
     for i in range(len(prediccion_prueba)):
-        if prediccion_entrenamiento[i] == 0:
+        if prediccion_prueba[i] == 0:
             ls_pred.append('estudiar')
-        elif prediccion_entrenamiento[i] == 1:
+        elif prediccion_prueba[i] == 1:
             ls_pred.append('no conceder')
         else:
             ls_pred.append('conceder')
@@ -1252,21 +1271,19 @@ def clas_mult(rate, rate_decay, batch_tam, imprimir):
         for ejemplo, prediccion in zip(cd.X_credito, ls_pred):
             print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
 
-    contador_aciertos = 0
-    for i in range(len(cd.y_credito)):
-        if ls_pred[i] == cd.y_credito[i]: 
-            contador_aciertos += 1
-    rend = (contador_aciertos/len(cd.y_credito))*100
+    rend = rendimiento(rl_credito_ovr, Xe_codificado, ye_credito)
+    # contador_aciertos = 0
+    # for i in range(len(cd.y_credito)):
+    #     if ls_pred[i] == cd.y_credito[i]: 
+    #         contador_aciertos += 1
+    # rend = (contador_aciertos/len(cd.y_credito))*100
 
     return [rate, rate_decay, batch_tam, rend]
 
 
 
-# Codificar los atributos en formato one-hot
-X_codificado = codifica_one_hot(cd.X_credito)
-
 # Dividir el conjunto de datos en entrenamiento y prueba
-Xe_credito, Xp_credito, ye_credito, yp_credito = particion_entr_prueba(X_codificado, cd.y_credito)
+Xe_credito, Xp_credito, ye_credito, yp_credito = particion_entr_prueba(cd.X_credito, cd.y_credito)
 
 import itertools
 # Params
@@ -1283,15 +1300,15 @@ combinaciones = list(itertools.product(valores_rate, valores_rate_decay, valores
 # clas_mult(ls_comb[0], ls_comb[1], ls_comb[2], True)
 
 # Para cada combinacion de params
-rendMax = 0
-ls_param = [0, True, 0]
-for combinacion in combinaciones:
-    ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
-    if rendMax < ls_comb[3]:
-        rendMax = ls_comb[3]
-        ls_param[0] = ls_comb[0]
-        ls_param[1] = ls_comb[1]
-        ls_param[2] = ls_comb[2]
+# rendMax = 0
+# ls_param = [0, True, 0]
+# for combinacion in combinaciones:
+#     ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
+#     if rendMax < ls_comb[3]:
+#         rendMax = ls_comb[3]
+#         ls_param[0] = ls_comb[0]
+#         ls_param[1] = ls_comb[1]
+#         ls_param[2] = ls_comb[2]
 # clas_mult(ls_param[0], ls_param[1], ls_param[2], True)
 # print("Rendimiento alcanzado", rendMax)
 
@@ -1331,79 +1348,46 @@ import os
 import numpy as np
 import zipfile
 
+import os
+import numpy as np
+import zipfile
+
 def leer_datos():
     if not os.path.exists("datos/digits"):
         with zipfile.ZipFile("datos/digitdata.zip", "r") as zip_ref:
             zip_ref.extractall("datos/digits")
 
-    with open("datos/digits/trainingimages", "r") as f:
-        lines = f.readlines()
-        # print(lines[:10])  # Imprimir las primeras 10 líneas de los datos de entrenamiento
+    X_test, y_test, X_train, y_train = [],[],[],[]
 
-        num_examples = len(lines) // 28
-        train_data = np.zeros((num_examples, 28, 28))
+    valor_de = lambda x: 0.0 if x == ' ' else 1.0
 
-        for i in range(num_examples):
-            for j in range(28):
-                line = lines[i*28 + j]
-                for k in range(28):
-                    if line[k] == ' ':
-                        train_data[i, j, k] = 0
-                    else:
-                        train_data[i, j, k] = 1
+    with open("datos/digits/testimages", encoding='utf-8') as f:
+        X_test = [[valor_de(c) for c in line if c != '\n'] for line in f]
 
-        print("Dimensiones de los datos de entrenamiento:", train_data.shape)
+    with open("datos/digits/testlabels", encoding='utf-8') as f:
+        y_test = [int(line) for line in f if len(line.strip()) > 0]
 
-        with open("datos/digits/traininglabels", "r") as f_labels:
-            train_labels = f_labels.read().splitlines()
-            train_labels = np.array(train_labels, dtype=int)
+    with open("datos/digits/trainingimages", encoding='utf-8') as f:
+        X_train = [[valor_de(c) for c in line if c != '\n'] for line in f]
 
-        print("Dimensiones de las etiquetas de entrenamiento:", train_labels.shape)
+    with open("datos/digits/traininglabels", encoding='utf-8') as f:
+        y_train = [int(line) for line in f if len(line.strip()) > 0]
 
-    with open("datos/digits/testimages", "r") as f:
-        lines = f.readlines()
+    # Aplicamos split para que corte toda la lectura de las 'X' en base a las 'y' leídas
+    Xtrn = np.array(np.array_split(np.array(X_train), len(y_train)))
+    Xtst = np.array(np.array_split(np.array(X_test), len(y_test)))
+    ytrn = np.array(y_train)
+    ytst = np.array(y_test)
 
-        num_examples = len(lines) // 28
-        test_data = np.zeros((num_examples, 28, 28))
+    # Utilizamos np.reshape para cambiar la forma del array a (n_ejemplos, 784)
+    return np.reshape(Xtrn, (Xtrn.shape[0], -1)), np.reshape(Xtst, (Xtst.shape[0], -1)), ytrn, ytst
 
-        for i in range(num_examples):
-            for j in range(28):
-                line = lines[i*28 + j]
-                for k in range(28):
-                    if line[k] == ' ':
-                        test_data[i, j, k] = 0
-                    else:
-                        test_data[i, j, k] = 1
 
-        print("Dimensiones de los datos de prueba:", test_data.shape)
-
-        with open("datos/digits/testlabels", "r") as f_labels:
-            test_labels = f_labels.read().splitlines()
-            test_labels = np.array(test_labels, dtype=int)
-
-        print("Dimensiones de las etiquetas de prueba:", test_labels.shape)
-
-    return train_data, train_labels, test_data, test_labels
-
-# Llamada a la función para leer los datos
-datos_entrenamiento, etiquetas_entrenamiento, datos_prueba, etiquetas_prueba = leer_datos()
-print(datos_entrenamiento[1])
-print(etiquetas_entrenamiento[1])
-print(datos_prueba[10])
-print(etiquetas_prueba[10])
-
-# Crea una instancia del clasificador RL_OvR
-clasificador = RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
-
-# Entrena el clasificador con los datos y etiquetas
-clasificador.entrena(datos_entrenamiento, etiquetas_entrenamiento, n_epochs=100, salida_epoch=False)
-
-# Utiliza el clasificador para predecir las etiquetas de las imágenes de prueba
-etiquetas_predichas = clasificador.clasifica(datos_prueba)
-
-# Etiquetas predichas para las imágenes de prueba
-print(etiquetas_predichas)
-
+# Xe_digitos,Xp_digitos,ye_digitos,yp_digitos = leer_datos()
+# rl_digitos=RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
+# rl_digitos.entrena(Xe_digitos,ye_digitos)
+# print("Rendimiento en entrenamiento:", rendimiento(rl_digitos,Xe_digitos,ye_digitos))
+# print("Rendimiento en prueba:", rendimiento(rl_digitos,Xp_digitos,yp_digitos))
 
 
 # =========================================================================
@@ -1544,78 +1528,11 @@ class RL_Multinomial():
 
 
 
-rl_iris_m=RL_Multinomial(rate=0.001,batch_tam=8)
-rl_iris_m.entrena(Xe_iris,ye_iris,n_epochs=50)
+# rl_iris_m=RL_Multinomial(rate=0.001,batch_tam=8)
+# rl_iris_m.entrena(Xe_iris,ye_iris,n_epochs=50)
 
 # print(rendimiento(rl_iris_m,Xe_iris,ye_iris))
 # print(rendimiento(rl_iris_m,Xp_iris,yp_iris))
-
-
-
-
-# import numpy as np
-# from scipy.special import softmax
-
-# class RL_Multinomial():
-#     def __init__(self, rate=0.1, rate_decay=False, batch_tam=64):
-#         self.rate = rate
-#         self.rate_decay = rate_decay
-#         self.batch_tam = batch_tam
-#         self.weights = None
-
-#     def entrena(self, X, y, n_epochs=100, salida_epoch=False):
-#         # Codificar las etiquetas en una representación one-hot
-#         n_clases = len(np.unique(y))
-#         y_onehot = np.eye(n_clases)[y]
-
-#         # Inicializar los pesos aleatoriamente
-#         n_atributos = X.shape[1]
-#         self.weights = np.random.randn(n_atributos, n_clases)
-
-#         # Entrenamiento en minibatch
-#         n_ejemplos = X.shape[0]
-#         for epoch in range(n_epochs):
-#             # Barajar los datos
-#             indices = np.random.permutation(n_ejemplos)
-#             X = X[indices]
-#             y_onehot = y_onehot[indices]
-
-#             # Dividir los datos en minibatches
-#             n_batches = n_ejemplos // self.batch_tam
-#             for batch in range(n_batches):
-#                 start = batch * self.batch_tam
-#                 end = start + self.batch_tam
-#                 X_batch = X[start:end]
-#                 y_batch = y_onehot[start:end]
-
-#                 # Calcular la función de activación softmax
-#                 scores = np.dot(X_batch, self.weights)
-#                 probs = softmax(scores, axis=1)
-
-#                 # Calcular el gradiente y actualizar los pesos
-#                 error = probs - y_batch
-#                 gradient = np.dot(X_batch.T, error) / self.batch_tam
-#                 self.weights -= self.rate * gradient
-
-#             # Decaimiento de la tasa de aprendizaje
-#             if self.rate_decay:
-#                 self.rate /= (epoch + 1)
-
-#             # Imprimir la precisión en cada epoch si se solicita
-#             if salida_epoch:
-#                 acc = self.rendimiento(X, y)
-#                 print(f"Epoch {epoch + 1}/{n_epochs} - Precisión: {acc}")
-
-#     def clasifica_prob(self, ejemplos):
-#         scores = np.dot(ejemplos, self.weights)
-#         probs = softmax(scores, axis=1)
-#         return probs
-
-#     def clasifica(self, ejemplos):
-#         probs = self.clasifica_prob(ejemplos)
-#         clases = np.argmax(probs, axis=1)
-#         return clases
-
 
 
 
