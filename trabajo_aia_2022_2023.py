@@ -278,19 +278,24 @@ Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,c
 # media 0 y desviación típica 1. 
 
 # En particular, definir la clase: 
+
 class NormalizadorStandard():
 
     def __init__(self):
+        #Inicializamos variable media y desviación típica como None
         self.media = None
         self.desviacion=None
 
     def ajusta(self,X):
+        #Calculamos  la media y desviación típica de X de cada columna de la matriz X
         self.media = np.mean(X, axis=0)
         self.desviacion = np.std(X, axis=0)
 
     def normaliza(self,X):
+        #Verificamos si la media y la desviación típica no están ajustadas
         if self.media is None or self.desviacion is None:
             raise NormalizadorNoAjustado("Normalizador no ajustado")
+        #Calculamos X_normalizado aplicando su ecuación correspondiente
         X_normalizado = (X - self.media) / self.desviacion
         return X_normalizado
 
@@ -357,16 +362,20 @@ Xp_cancer_n = normStd_cancer.normaliza(Xp_cancer)
 class NormalizadorMinMax():
 
     def __init__(self):
+        #Inicializamos variable mínimo y máximo como None
         self.minimo = None
         self.maximo = None
 
     def ajusta(self,X):
+        #Calculamos el mínimo y el maximo de X de cada columna de la matriz X (usando numpy)
         self.minimo = np.min(X, axis=0)
         self.maximo = np.max(X, axis=0)
 
     def normaliza(self,X):
+        #Verificamos siel mínimo y el máximo no estan ajustadas
         if self.minimo is None or self.maximo is None:
             raise NormalizadorNoAjustado("Normalizador no ajustado")
+        #Calcular X_normalizado aplicando su ecuación correspondiente
         X_normalizado = (X - self.minimo) / (self.maximo - self.minimo)
         return X_normalizado
 
@@ -582,20 +591,20 @@ class ClasificadorNoEntrenado(Exception):
 
 class RegresionLogisticaMiniBatch():
     def __init__(self, rate=0.1, rate_decay=False, n_epochs=100, batch_tam=64):
+        #Inicializamos el constructor y sus variables necesarias
         self.rate = rate  
         self.rate_decay = rate_decay
         self.n_epochs = n_epochs
         self.batch_tam = batch_tam
         self.pesos = None # Inicializamos pesos y clases en el método init
-        self.clases = []  # ya que será útil su uso en distintas funciones
-                          # y su valor debe almacenarse a modo de var estática 
+        self.clases = []        # ya que será útil su uso en distintas funciones
+                                                    # y su valor debe almacenarse a modo de var estática 
 
     def sigmoide(self, x):
         return expit(x)
 
     def entropia_cruzada(self, y, y_pred):
         return np.sum(np.where(y == 1, -np.log(y_pred), -np.log(1 - y_pred)))
-        # return np.where(-(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred)))
 
     def entrena(self, X, y, Xv=None, yv=None, n_epochs=100, salida_epoch=False, early_stopping=False, paciencia=3):
 
@@ -619,7 +628,7 @@ class RegresionLogisticaMiniBatch():
 
         for epoch in range(n_epochs):
             if(self.rate_decay==True):
-                rate_n = (self.rate)*(1/(1+epoch)) # self.rate decrecerá en cada it
+                rate_n = (self.rate)*(1/(1+epoch)) # self.rate decrecerá en cada iter
             else:
                 rate_n = self.rate 
 
@@ -637,54 +646,60 @@ class RegresionLogisticaMiniBatch():
                 # En y_pred tendremos la predicción de clase para el X_batch actual
                 y_pred = self.sigmoide(np.dot(X_batch, self.pesos))
             
-                # Error de predicción del modelo
+                # Calculamos el Error de predicción del modelo
                 err_pred = y_pred - y_batch.astype(float)
                 gradiente = np.dot(err_pred, X_batch)
                 
-                # gradiente = np.dot(X_batch.T, y_pred - y_batch)
+
+                #actualizamos los pesos
                 self.pesos -= rate_n * gradiente
 
             if salida_epoch:
+                # si se cumple la condición, mostramos la EC del entrenamiento y validación de cada epoca 
                 pred_entr = self.clasifica_prob(X)
                 perdidaEntr = self.entropia_cruzada(y, pred_entr)
-                # acc_train = np.mean(self.clasifica(X) == y)
-                accuracy_entr = rendimiento(self, X, y)
+                rend_entr = rendimiento(self, X, y)
 
                 y_pred_val = self.clasifica_prob(Xv)
                 perdida = self.entropia_cruzada(yv, y_pred_val)
-                # acc_val = np.mean(self.clasifica(Xv) == yv)
-                accuracy_val = rendimiento(self, Xv, yv)
+                rend_val = rendimiento(self, Xv, yv)
 
                 print(f"Epoch {epoch + 1}:")
-                print(f"  en entrenamiento EC: {perdidaEntr:.4f}, rendimiento: {accuracy_entr:.4f}")
-                print(f"  en validación EC: {perdida:.4f}, rendimiento: {accuracy_val:.4f}")
+                print(f"  en entrenamiento EC: {perdidaEntr:.4f}, rendimiento: {rend_entr:.4f}")
+                print(f"  en validación EC: {perdida:.4f}, rendimiento: {rend_val:.4f}")
 
                 if early_stopping:
+                    #si se cumple esta condición, actualizamos el valor de perdida
+                    # y establecemos la paciencia a 0.
                     if perdida < mejor_perdida:
                         mejor_perdida = perdida
                         contPaciencia = 0
                     else: 
+                    # en caso contrario, aumentamos la paciencia
                         contPaciencia += 1
-
+                    # finalmente si la paciencia supera el limite establecido, se produce "PARADA TEMPRANA" (earlystopping)
                     if contPaciencia >= paciencia:
                         print("PARADA TEMPRANA")
                         break
                 
 
     def clasifica_prob(self, ejemplos):
+        # si no estan declarados los pesos, salta una interrupción, indicando de que no está entrenado el modelo
         if self.pesos is None:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado")
-
+        # Calculamos la probabilidad de pertenencia respecto a las clases
         y_pred = self.sigmoide(np.dot(ejemplos, self.pesos))
         return y_pred
 
     def clasifica(self, ejemplo):
+        # si no estan declarados los pesos, salta una interrupción, indicando de que no está entrenado el modelo
         if self.pesos is None:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado")
-
+        # Calculamos la probabilidad de pertenencia respecto a las clases
         y_pred = self.sigmoide(np.dot(ejemplo, self.pesos))
-        y_pred_class = np.where(y_pred >= 0.5, self.clases[1], self.clases[0])
-        return y_pred_class
+        # Devolvemos un array que contiene las clases asignadas a cada predicción 
+        y_pred_clase = np.where(y_pred >= 0.5, self.clases[1], self.clases[0])
+        return y_pred_clase
 
 lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
 # lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
@@ -1100,7 +1115,7 @@ class RL_OvR():
         if not self.clasificadores:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
 
-        # Calculamos la probabilidad de pertenencia para cada clase
+        # Asociamos a y_pred la probabilidades de pertenencia
         y_pred = []
         for _, clasificador in self.clasificadores.items():
             y_pred.append(clasificador.clasifica_prob(ejemplos))
@@ -1114,8 +1129,9 @@ class RL_OvR():
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
-print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
-print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
+
+# print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
+# print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
 
 # --------------------------------
 
@@ -1235,14 +1251,14 @@ Xc=np.array([["a",1,"c","x"],
 # ----------------------
 
 def clas_mult(rate, rate_decay, batch_tam, imprimir):
-    # Crear una instancia del clasificador OvR y entrenarlo
+    # Inicializamos el constructor del clasificador OvR y lo asignamos a una variable
     rl_credito_ovr = RL_OvR(rate=rate, rate_decay=rate_decay, batch_tam=batch_tam)
 
-    # Codificar los atributos en formato one-hot
+    # Codificamos los atributos en formato one-hot
     Xe_codificado = codifica_one_hot(Xe_credito)
     Xp_codificado = codifica_one_hot(Xp_credito)
 
-    # Entrenar el modelo
+    # Entrenar el modelo OvR con los datos de entrenamiento codificados
     rl_credito_ovr.entrena(Xe_codificado, ye_credito)
 
 
@@ -1251,6 +1267,10 @@ def clas_mult(rate, rate_decay, batch_tam, imprimir):
     prediccion_prueba = rl_credito_ovr.clasifica(Xp_codificado)
 
     ls_pred = []
+    # Inicializamos una lista ls_pred, donde vamos a almacenar la conversion de valores
+    # en los arrays de entrenamiento y prueba declarados anteriormente.
+    # Ejemplo:
+    # [0,1,0,...] = ['estudiar', 'conceder', 'estudiar',...]
     for i in range(len(prediccion_entrenamiento)):
         if prediccion_entrenamiento[i] == 0:
             ls_pred.append('estudiar')
@@ -1291,25 +1311,23 @@ valores_rate = [0.1, 0.01, 0.001]
 valores_rate_decay = [True, False]
 valores_batch_tam = [16, 32, 64, 128]
 
-# Realizar la combinación de elementos sin repetir de la misma lista
+# Creamos una lista de combinaciones de parametros haciendo uso del modulo itertools
 combinaciones = list(itertools.product(valores_rate, valores_rate_decay, valores_batch_tam))
 
 # Para cada combinacion de params
-# for combinacion in combinaciones:
-#     ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
-# clas_mult(ls_comb[0], ls_comb[1], ls_comb[2], True)
+rendMax = 0
+ls_param = [0, True, 0]
+for combinacion in combinaciones:
+    ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
+    if rendMax < ls_comb[3]:
+        rendMax = ls_comb[3]
+        ls_param[0] = ls_comb[0]
+        ls_param[1] = ls_comb[1]
+        ls_param[2] = ls_comb[2]
+        
+# -- test 8.1 -- #
 
-# Para cada combinacion de params
-# rendMax = 0
-# ls_param = [0, True, 0]
-# for combinacion in combinaciones:
-#     ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
-#     if rendMax < ls_comb[3]:
-#         rendMax = ls_comb[3]
-#         ls_param[0] = ls_comb[0]
-#         ls_param[1] = ls_comb[1]
-#         ls_param[2] = ls_comb[2]
-# clas_mult(ls_param[0], ls_param[1], ls_param[2], True)
+# clas_mult(ls_param[0], ls_param[1], ls_param[2], False)
 # print("Rendimiento alcanzado", rendMax)
 
 
@@ -1383,11 +1401,11 @@ def leer_datos():
     return np.reshape(Xtrn, (Xtrn.shape[0], -1)), np.reshape(Xtst, (Xtst.shape[0], -1)), ytrn, ytst
 
 
-# Xe_digitos,Xp_digitos,ye_digitos,yp_digitos = leer_datos()
-# rl_digitos=RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
-# rl_digitos.entrena(Xe_digitos,ye_digitos)
-# print("Rendimiento en entrenamiento:", rendimiento(rl_digitos,Xe_digitos,ye_digitos))
-# print("Rendimiento en prueba:", rendimiento(rl_digitos,Xp_digitos,yp_digitos))
+Xe_digitos,Xp_digitos,ye_digitos,yp_digitos = leer_datos()
+rl_digitos=RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
+rl_digitos.entrena(Xe_digitos,ye_digitos)
+print("Rendimiento en entrenamiento:", rendimiento(rl_digitos,Xe_digitos,ye_digitos))
+print("Rendimiento en prueba:", rendimiento(rl_digitos,Xp_digitos,yp_digitos))
 
 
 # =========================================================================
