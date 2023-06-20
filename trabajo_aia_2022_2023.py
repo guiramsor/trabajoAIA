@@ -628,7 +628,7 @@ class RegresionLogisticaMiniBatch():
 
                 y_pred = self.sigmoide(np.dot(X_batch, self.pesos))
                 # gradiente = np.dot(X_batch.T, y_pred - y_batch) / len(X_batch)
-                gradiente = np.dot(X_batch.T, y_pred - y_batch.astype(float)) / len(X_batch)
+                gradiente = np.dot(X_batch.T, y_pred - y_batch.astype(float))
                 
                 # gradiente = np.dot(X_batch.T, y_pred - y_batch)
                 self.pesos -= rate_n * gradiente
@@ -676,7 +676,12 @@ class RegresionLogisticaMiniBatch():
         return y_pred_class
 
 lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
-# lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
+lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
+# print(lr_cancer.clasifica(Xp_cancer_n[24:27]))
+# print(yp_cancer[24:27])
+# print(lr_cancer.clasifica_prob(Xp_cancer_n[24:27]))
+# print(rendimiento(lr_cancer,Xe_cancer_n,ye_cancer))
+# print(rendimiento(lr_cancer,Xp_cancer_n,yp_cancer))
 # ------------------------------------------------------------------------------
 
 
@@ -1064,39 +1069,39 @@ class RL_OvR():
         self.rate_decay = rate_decay
         self.batch_tam = batch_tam
         # Creamos un dicc de clasificadores binarios
-        self.classifiers = {}
+        self.clasificadores = {}
 
     def entrena(self, X, y, n_epochs=100, salida_epoch=False):
         # Obtenemos las clases únicas
-        self.classes = np.unique(y)
+        self.clases = np.unique(y)
 
         # Iteramos dichas clases obtenidas en los datos de entrenamiento
         # y entrena un clasificador binario para cada una de ellas
-        for c in self.classes:
-            y_binary = np.where(y == c, 1, 0)
-            classifier = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
+        for c in self.clases:
+            y_bin = np.where(y == c, 1, 0)
+            clasificador = RegresionLogisticaMiniBatch(rate=self.rate, rate_decay=self.rate_decay, batch_tam=self.batch_tam)
 
             # Entrenamos el clasificador para la predección de clases
-            classifier.entrena(X, y_binary, n_epochs=n_epochs, salida_epoch=salida_epoch)
-            self.classifiers[c] = classifier
+            clasificador.entrena(X, y_bin, n_epochs=n_epochs, salida_epoch=salida_epoch)
+            self.clasificadores[c] = clasificador
 
     def clasifica(self, ejemplos):
-        if not self.classifiers:
+        if not self.clasificadores:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado.")
 
         # Calculamos la probabilidad de pertenencia para cada clase
         y_pred = []
-        for _, classifier in self.classifiers.items():
-            y_pred.append(classifier.clasifica_prob(ejemplos))
+        for _, clasificador in self.clasificadores.items():
+            y_pred.append(clasificador.clasifica_prob(ejemplos))
 
         # Devolvemos la clase con mayor probabilidad
         y_pred = np.array(y_pred)
-        y_pred_class = np.argmax(y_pred, axis=0)
-        return y_pred_class
+        y_class = np.argmax(y_pred, axis=0)
+        return y_class
 
 
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
-rl_iris_ovr = RL_OvR(rate=0.01, batch_tam=10)
+rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
 # print(rendimiento(rl_iris_ovr, Xe_iris, ye_iris))
 # print(rendimiento(rl_iris_ovr, Xp_iris, yp_iris))
@@ -1382,22 +1387,22 @@ def leer_datos():
 
 # Llamada a la función para leer los datos
 datos_entrenamiento, etiquetas_entrenamiento, datos_prueba, etiquetas_prueba = leer_datos()
-print(datos_entrenamiento[0])
-print(etiquetas_entrenamiento[0])
-print(datos_prueba[0])
-print(etiquetas_prueba[0])
+print(datos_entrenamiento[1])
+print(etiquetas_entrenamiento[1])
+print(datos_prueba[10])
+print(etiquetas_prueba[10])
 
-# # Crea una instancia del clasificador RL_OvR
-# clasificador = RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
+# Crea una instancia del clasificador RL_OvR
+clasificador = RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
 
-# # Entrena el clasificador con los datos y etiquetas
-# clasificador.entrena(datos_entrenamiento, etiquetas_entrenamiento, n_epochs=100, salida_epoch=False)
+# Entrena el clasificador con los datos y etiquetas
+clasificador.entrena(datos_entrenamiento, etiquetas_entrenamiento, n_epochs=100, salida_epoch=False)
 
-# # Utiliza el clasificador para predecir las etiquetas de las imágenes de prueba
-# etiquetas_predichas = clasificador.clasifica(datos_prueba)
+# Utiliza el clasificador para predecir las etiquetas de las imágenes de prueba
+etiquetas_predichas = clasificador.clasifica(datos_prueba)
 
-# # Etiquetas predichas para las imágenes de prueba
-# print(etiquetas_predichas)
+# Etiquetas predichas para las imágenes de prueba
+print(etiquetas_predichas)
 
 
 
