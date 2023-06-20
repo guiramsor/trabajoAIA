@@ -598,7 +598,7 @@ class RegresionLogisticaMiniBatch():
         self.clases = np.unique(y)
         dicc_clases = {nombre_clase: i for i, nombre_clase in enumerate(self.clases)}
         # print(self.clases)
-        self.pesos = np.random.rand(X.shape[1])
+        self.pesos = np.random.randn(X.shape[1])
 
         if Xv is None:
             Xv = X
@@ -676,7 +676,7 @@ class RegresionLogisticaMiniBatch():
         return y_pred_class
 
 lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
-lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
+# lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
 # print(lr_cancer.clasifica(Xp_cancer_n[24:27]))
 # print(yp_cancer[24:27])
 # print(lr_cancer.clasifica_prob(Xp_cancer_n[24:27]))
