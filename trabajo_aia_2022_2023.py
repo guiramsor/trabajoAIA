@@ -194,10 +194,7 @@ from scipy.special import softmax
 def particion_entr_prueba(X, y, test=0.20):
     
     # Comenzamos inicializando los conjuntos de entrenamiento y prueba (vacíos)
-    X_train = []
-    y_train = []
-    X_test = []
-    y_test = []
+    X_train, y_train, X_test, y_test = [], [], [], []
     
     # Obtenemos los valores únicos de clasificación aplicando el método unique
     clases = np.unique(y)
