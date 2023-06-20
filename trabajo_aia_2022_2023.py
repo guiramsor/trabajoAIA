@@ -20,6 +20,10 @@
 # NOMBRE: Daniel
 # ----------------------------------------------------------------------------
 
+# ANOTACIÓN: No hemos tenido lugar de preparar un una impresión elegante de
+# los test para cada ejercicio, pero puede filtrar las líneas a descomentar
+# mediante las notaciones siguiente:
+# -- TEST EJ --
 
 # ****************************************************************************************
 # HONESTIDAD ACADÉMICA Y COPIAS: un trabajo práctico es un examen. La discusión 
@@ -222,6 +226,8 @@ def particion_entr_prueba(X, y, test=0.20):
     
     return X_train, X_test, y_train, y_test
 
+
+# -- TEST EJ 1 --
 Xe_votos,Xp_votos,ye_votos,yp_votos=particion_entr_prueba(cd.X_votos,cd.y_votos,test=1/3)
 # print(np.unique(cd.y_votos,return_counts=True))
 # #  (array([0, 1]), array([168, 267]))
@@ -282,7 +288,7 @@ Xe_credito,Xp_credito,ye_credito,yp_credito=particion_entr_prueba(cd.X_credito,c
 class NormalizadorStandard():
 
     def __init__(self):
-        #Inicializamos variable media y desviación típica como None
+        #Inicializamos variable media y desviación típica con None
         self.media = None
         self.desviacion=None
 
@@ -312,6 +318,7 @@ class NormalizadorNoAjustado(Exception): pass
 normStd_cancer = NormalizadorStandard()
 normStd_cancer.ajusta(Xe_cancer)
 
+# -- TEST EJ 2.1 --
 Xe_cancer_n = normStd_cancer.normaliza(Xe_cancer)
 # print(round(np.mean(Xe_cancer_n)))
 # print(round(np.std(Xe_cancer_n)))
@@ -362,7 +369,7 @@ Xp_cancer_n = normStd_cancer.normaliza(Xp_cancer)
 class NormalizadorMinMax():
 
     def __init__(self):
-        #Inicializamos variable mínimo y máximo como None
+        #Inicializamos variable mínimo y máximo con None
         self.minimo = None
         self.maximo = None
 
@@ -382,7 +389,7 @@ class NormalizadorMinMax():
 normMM_cancer=NormalizadorMinMax()
 normMM_cancer.ajusta(Xe_cancer)
 
-
+# -- TEST EJ 2.2 --
 Xe_cancer_m=normMM_cancer.normaliza(Xe_cancer)
 Xv_cancer_m=normMM_cancer.normaliza(Xv_cancer)
 Xp_cancer_m=normMM_cancer.normaliza(Xp_cancer)
@@ -651,11 +658,11 @@ class RegresionLogisticaMiniBatch():
                 gradiente = np.dot(err_pred, X_batch)
                 
 
-                #actualizamos los pesos
+                #Actualizamos los pesos
                 self.pesos -= rate_n * gradiente
 
             if salida_epoch:
-                # si se cumple la condición, mostramos la EC del entrenamiento y validación de cada epoca 
+                # Si se cumple la condición, mostramos la EC del entrenamiento y validación de cada epoca 
                 pred_entr = self.clasifica_prob(X)
                 perdidaEntr = self.entropia_cruzada(y, pred_entr)
                 rend_entr = rendimiento(self, X, y)
@@ -669,22 +676,22 @@ class RegresionLogisticaMiniBatch():
                 print(f"  en validación EC: {perdida:.4f}, rendimiento: {rend_val:.4f}")
 
                 if early_stopping:
-                    #si se cumple esta condición, actualizamos el valor de perdida
+                    #Si se cumple esta condición, actualizamos el valor de perdida
                     # y establecemos la paciencia a 0.
                     if perdida < mejor_perdida:
                         mejor_perdida = perdida
                         contPaciencia = 0
                     else: 
-                    # en caso contrario, aumentamos la paciencia
+                    # En caso contrario, aumentamos la paciencia
                         contPaciencia += 1
-                    # finalmente si la paciencia supera el limite establecido, se produce "PARADA TEMPRANA" (earlystopping)
+                    # Finalmente si la paciencia supera el limite establecido, se produce "PARADA TEMPRANA" (earlystopping)
                     if contPaciencia >= paciencia:
                         print("PARADA TEMPRANA")
                         break
                 
 
     def clasifica_prob(self, ejemplos):
-        # si no estan declarados los pesos, salta una interrupción, indicando de que no está entrenado el modelo
+        # Si no estan declarados los pesos, salta una interrupción, indicando de que no está entrenado el modelo
         if self.pesos is None:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado")
         # Calculamos la probabilidad de pertenencia respecto a las clases
@@ -692,7 +699,7 @@ class RegresionLogisticaMiniBatch():
         return y_pred
 
     def clasifica(self, ejemplo):
-        # si no estan declarados los pesos, salta una interrupción, indicando de que no está entrenado el modelo
+        # Si no estan declarados los pesos, salta una interrupción, indicando de que no está entrenado el modelo
         if self.pesos is None:
             raise ClasificadorNoEntrenado("El modelo no ha sido entrenado")
         # Calculamos la probabilidad de pertenencia respecto a las clases
@@ -701,6 +708,7 @@ class RegresionLogisticaMiniBatch():
         y_pred_clase = np.where(y_pred >= 0.5, self.clases[1], self.clases[0])
         return y_pred_clase
 
+# -- TEST EJ 3 --
 lr_cancer=RegresionLogisticaMiniBatch(rate=0.1,rate_decay=True)
 # lr_cancer.entrena(Xe_cancer_n, ye_cancer, Xv_cancer_n, yv_cancer, salida_epoch=True, early_stopping=True)
 # print(lr_cancer.clasifica(Xp_cancer_n[24:27]))
@@ -828,7 +836,7 @@ def rendimiento_validacion_cruzada(clase_clasificador, params, X, y, Xv=None, yv
     return rendimiento_medio
 
 
-# Importar la clase RegresionLogisticaMiniBatch (Ejercicio 3)
+# -- TEST EJ 4 --
 # rendimiento_medio = rendimiento_validacion_cruzada(RegresionLogisticaMiniBatch,{"batch_tam":16,"rate":0.01,"rate_decay":True},Xe_cancer_n,ye_cancer,n=5)
 # print(f"Rendimiento medio: {rendimiento_medio}")
 
@@ -916,10 +924,6 @@ normst_votos.ajusta(Xe_votos)
 Xe_votos_n = normst_votos.normaliza(Xe_votos)
 Xv_votos_n = normst_votos.normaliza(Xv_votos)
 
-#############################################################
-# clasifBin_votos()
-#############################################################
-
 def clasifBin_cancer():
     lr_cancer = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
@@ -970,10 +974,6 @@ normst_cancer.ajusta(Xe_cancer)
 Xe_cancer_n = normst_cancer.normaliza(Xe_cancer)
 Xv_cancer_n = normst_cancer.normaliza(Xv_cancer)
 
-#############################################################
-# clasifBin_cancer()
-#############################################################
-
 def clasifBin_imdb():
     lr_imdb = RegresionLogisticaMiniBatch(rate=0.1, rate_decay=True)
 
@@ -1023,9 +1023,12 @@ normst_imdb.ajusta(Xe_imdb)
 Xe_imdb_n = normst_imdb.normaliza(Xe_imdb)
 Xv_imdb_n = normst_imdb.normaliza(Xv_imdb)
 
-#############################################################
+# -- TEST EJ 5 --
+# clasifBin_votos()
+
+# clasifBin_cancer()
+
 # clasifBin_imdb()
-#############################################################
 
 # =====================================================
 # EJERCICIO 6: CLASIFICACIÓN MULTICLASE CON ONE vs REST
@@ -1126,6 +1129,7 @@ class RL_OvR():
         return self.clases[y_class]
 
 
+# -- TEST EJ 6 --
 Xe_iris, Xp_iris, ye_iris, yp_iris = particion_entr_prueba(cd.X_iris, cd.y_iris)
 rl_iris_ovr = RL_OvR(rate=0.001, batch_tam=8)
 rl_iris_ovr.entrena(Xe_iris, ye_iris)
@@ -1220,6 +1224,9 @@ def codifica_one_hot(X):
     
     return X_codificado
 
+
+
+# -- TEST EJ 7 --
 Xc=np.array([["a",1,"c","x"],
              ["b",2,"c","y"],
              ["c",1,"d","x"],
@@ -1250,9 +1257,10 @@ Xc=np.array([["a",1,"c","x"],
 
 # ----------------------
 
-def clas_mult(rate, rate_decay, batch_tam, imprimir):
+def clasif_mult(rate, rate_decay, batch_tam, imprimir):
     # Inicializamos el constructor del clasificador OvR y lo asignamos a una variable
     rl_credito_ovr = RL_OvR(rate=rate, rate_decay=rate_decay, batch_tam=batch_tam)
+
 
     # Codificamos los atributos en formato one-hot
     Xe_codificado = codifica_one_hot(Xe_credito)
@@ -1263,43 +1271,16 @@ def clas_mult(rate, rate_decay, batch_tam, imprimir):
 
 
     # Realizar predicciones en el conjunto de entrenamiento y prueba
-    prediccion_entrenamiento = rl_credito_ovr.clasifica(Xe_codificado)
+    # prediccion_entrenamiento = rl_credito_ovr.clasifica(Xe_codificado)
     prediccion_prueba = rl_credito_ovr.clasifica(Xp_codificado)
 
-    ls_pred = []
-    # Inicializamos una lista ls_pred, donde vamos a almacenar la conversion de valores
-    # en los arrays de entrenamiento y prueba declarados anteriormente.
-    # Ejemplo:
-    # [0,1,0,...] = ['estudiar', 'conceder', 'estudiar',...]
-    for i in range(len(prediccion_entrenamiento)):
-        if prediccion_entrenamiento[i] == 0:
-            ls_pred.append('estudiar')
-        elif prediccion_entrenamiento[i] == 1:
-            ls_pred.append('no conceder')
-        else:
-            ls_pred.append('conceder')
-
-    for i in range(len(prediccion_prueba)):
-        if prediccion_prueba[i] == 0:
-            ls_pred.append('estudiar')
-        elif prediccion_prueba[i] == 1:
-            ls_pred.append('no conceder')
-        else:
-            ls_pred.append('conceder')
-
     if imprimir:
-        for ejemplo, prediccion in zip(cd.X_credito, ls_pred):
+        for ejemplo, prediccion in zip(cd.X_credito, prediccion_prueba):
             print(f"Ejemplo: {ejemplo} => Predicción: {prediccion}")
 
     rend = rendimiento(rl_credito_ovr, Xe_codificado, ye_credito)
-    # contador_aciertos = 0
-    # for i in range(len(cd.y_credito)):
-    #     if ls_pred[i] == cd.y_credito[i]: 
-    #         contador_aciertos += 1
-    # rend = (contador_aciertos/len(cd.y_credito))*100
 
     return [rate, rate_decay, batch_tam, rend]
-
 
 
 # Dividir el conjunto de datos en entrenamiento y prueba
@@ -1318,17 +1299,17 @@ combinaciones = list(itertools.product(valores_rate, valores_rate_decay, valores
 rendMax = 0
 ls_param = [0, True, 0]
 for combinacion in combinaciones:
-    ls_comb = clas_mult(combinacion[0], combinacion[1], combinacion[2], False)
+    ls_comb = clasif_mult(combinacion[0], combinacion[1], combinacion[2], False)
     if rendMax < ls_comb[3]:
         rendMax = ls_comb[3]
         ls_param[0] = ls_comb[0]
         ls_param[1] = ls_comb[1]
         ls_param[2] = ls_comb[2]
-        
-# -- test 8.1 -- #
 
-# clas_mult(ls_param[0], ls_param[1], ls_param[2], False)
-# print("Rendimiento alcanzado", rendMax)
+# -- TEST EJ 8.1 -- 
+
+clasif_mult(ls_param[0], ls_param[1], ls_param[2], True)
+print("Rendimiento alcanzado", rendMax)
 
 
 # ---------------------------------------------------------
@@ -1371,41 +1352,48 @@ import numpy as np
 import zipfile
 
 def leer_datos():
+    
+    #Descomprimimos el fichero zip en caso de ser necesario
     if not os.path.exists("datos/digits"):
         with zipfile.ZipFile("datos/digitdata.zip", "r") as zip_ref:
             zip_ref.extractall("datos/digits")
 
-    X_test, y_test, X_train, y_train = [],[],[],[]
+    # Inicializamos las particiones de entrenamiento y test vacías
+    X_train, y_train, X_test, y_test = [], [], [], []
 
-    valor_de = lambda x: 0.0 if x == ' ' else 1.0
+    # Creamos un conversor de caracteres a 0 o 1
+    conversor_caracter = lambda x: 0.0 if x == ' ' else 1.0
 
+    # Leemos los 4 ficheros y aplicamos el conversor binario para
+    # las imágenes y un casting a entero para los ficheros de etiquetas
     with open("datos/digits/testimages", encoding='utf-8') as f:
-        X_test = [[valor_de(c) for c in line if c != '\n'] for line in f]
+        X_test = [[conversor_caracter(c) for c in line] for line in f]
 
     with open("datos/digits/testlabels", encoding='utf-8') as f:
         y_test = [int(line) for line in f if len(line.strip()) > 0]
 
     with open("datos/digits/trainingimages", encoding='utf-8') as f:
-        X_train = [[valor_de(c) for c in line if c != '\n'] for line in f]
+        X_train = [[conversor_caracter(c) for c in line] for line in f]
 
     with open("datos/digits/traininglabels", encoding='utf-8') as f:
         y_train = [int(line) for line in f if len(line.strip()) > 0]
 
-    # Aplicamos split para que corte toda la lectura de las 'X' en base a las 'y' leídas
-    Xtrn = np.array(np.array_split(np.array(X_train), len(y_train)))
-    Xtst = np.array(np.array_split(np.array(X_test), len(y_test)))
-    ytrn = np.array(y_train)
-    ytst = np.array(y_test)
+    # Aplicamos el método array_split para dividir los conjuntos 
+    # de datos X_train y X_test en subconjuntos
+    X_train_div = np.array(np.array_split(np.array(X_train), len(y_train)))
+    X_test_div = np.array(np.array_split(np.array(X_test), len(y_test)))
+    y_train_div = np.array(y_train)
+    y_test_div = np.array(y_test)
 
     # Utilizamos np.reshape para cambiar la forma del array a (n_ejemplos, 784)
-    return np.reshape(Xtrn, (Xtrn.shape[0], -1)), np.reshape(Xtst, (Xtst.shape[0], -1)), ytrn, ytst
+    return np.reshape(X_train_div, (X_train_div.shape[0], -1)), np.reshape(X_test_div, (X_test_div.shape[0], -1)), y_train_div, y_test_div
 
-
+# -- TEST EJ 8.2 --
 Xe_digitos,Xp_digitos,ye_digitos,yp_digitos = leer_datos()
-rl_digitos=RL_OvR(rate=0.1, rate_decay=False, batch_tam=64)
+rl_digitos=RL_OvR(rate=0.01, rate_decay=False, batch_tam=64)
 rl_digitos.entrena(Xe_digitos,ye_digitos)
-print("Rendimiento en entrenamiento:", rendimiento(rl_digitos,Xe_digitos,ye_digitos))
-print("Rendimiento en prueba:", rendimiento(rl_digitos,Xp_digitos,yp_digitos))
+# print("Rendimiento en entrenamiento:", rendimiento(rl_digitos,Xe_digitos,ye_digitos))
+# print("Rendimiento en prueba:", rendimiento(rl_digitos,Xp_digitos,yp_digitos))
 
 
 # =========================================================================
@@ -1477,26 +1465,30 @@ import numpy as np
 from scipy.special import softmax
 
 class RL_Multinomial():
+     #Inicializamos el constructor y sus variables necesarias
     def __init__(self, rate=0.1, rate_decay=False, batch_tam=64):
         self.rate = rate
         self.rate_decay = rate_decay
         self.batch_tam = batch_tam
         self.weights = None
-
+    #Codificamos en one-hot los valores de la clase
     def _one_hot_encode(self, y):
         n_samples = len(y)
         n_classes = np.max(y) + 1
+    #Creamos una Matriz de ceros de n_samples y n_classes y establece en 1 los elementos correspondientes en y.
         one_hot = np.zeros((n_samples, n_classes))
         one_hot[np.arange(n_samples), y] = 1
         return one_hot
-
+    #Aplicamos función softmax a las filas de X
     def _softmax(self, X):
         return softmax(X, axis=1)
-
+    #Inicializa los pesos del modelo
     def _initialize_weights(self, n_features, n_classes):
+        #Calculamos el limite
         limit = 1 / np.sqrt(n_features)
+        #Generamos valores aleatorios dentro de los limites para la matriz de pesos
         self.weights = np.random.uniform(-limit, limit, (n_features, n_classes))
-
+    #Creamos lotes de tamaño batch_tam
     def _batch_generator(self, X, y):
         n_samples = X.shape[0]
         indices = np.arange(n_samples)
